@@ -17,10 +17,14 @@ export default function Page() {
         {dummyPosts.map((post) => (
           <Link href={`/post/${post.id}`} key={post.id} className="block border rounded shadow p-4 hover:bg-gray-50 transition">
             {/* 見出し */}
-            <h2 className="text-lg font-bold mb-2">
-              {post.title}
-            </h2>
-
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`px-2 py-1 text-xs font-bold rounded ${post.type === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
+                {post.type === 'creation' ? '制作物' : '質問'}
+              </span>
+              <h2 className="text-lg font-bold">
+                {post.title}
+              </h2>
+            </div>
             {/* 画像枠 */}
             <div className="w-full h-40 bg-gray-200 mb-2 flex items-center justify-center text-gray-500 rounded">
               {post.imageUrl ? (
