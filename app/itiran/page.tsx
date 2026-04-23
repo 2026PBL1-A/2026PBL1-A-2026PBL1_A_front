@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Menu from "@/app/components/aikon";
 import Link from "next/link";
 import { dummyPosts } from "@/app/data/dummyPosts";
