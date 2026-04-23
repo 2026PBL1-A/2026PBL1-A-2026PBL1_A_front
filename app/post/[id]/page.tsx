@@ -21,7 +21,12 @@ export default async function PostDetailPage({
       </Link>
       
       <div className="border rounded shadow p-6 bg-white">
-        <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <span className={`px-2 py-1 text-sm font-bold rounded ${post.type === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
+            {post.type === 'creation' ? '制作物' : '質問'}
+          </span>
+          <h1 className="text-2xl font-bold">{post.title}</h1>
+        </div>
         
         {/* 画像枠 */}
         <div className="w-full h-64 bg-gray-200 mb-6 flex items-center justify-center text-gray-500 rounded overflow-hidden">
