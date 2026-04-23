@@ -1,33 +1,25 @@
 import Menu from "@/app/components/aikon";
+import PostCard from "../components/PostCard";
+
+const test_data = [
+  {id: 1, title: "C言語の開発について", datetime: new Date()},
+  {id: 2, title: "初めてのWeb個人開発", datetime: new Date()},
+  {id: 3, title: "【質問】Markdownの書き方について", datetime: new Date()},
+  {id:4, title: "自分で作ったWebアプリをデプロイしたい", datetime: new Date()}
+]
 
 export default function Page() {
   return (
-    <div>
+    <div className="min-h-screen bg-gray-100">
       <Menu />
 
       {/* 投稿一覧エリア */}
-      <div className="mt-10 space-y-6">
-        
-        {/* 投稿カード */}
-        <div className="border rounded shadow p-4">
-          
-          {/* 見出し */}
-          <h2 className="text-lg font-bold mb-2">
-            タイトルが入ります
-          </h2>
-
-          {/* 画像枠 */}
-          <div className="w-full h-40 bg-gray-200 mb-2 flex items-center justify-center">
-            画像エリア
-          </div>
-
-          {/* 本文 */}
-          <p>
-            ここに投稿の内容が入ります
-          </p>
-
-        </div>
-
+      <div className="m-10 space-y-6">
+        <ul className="grid gap-4">
+          {test_data.map((post, index) => (
+            <li key={index}><PostCard id={post.id} title={post.title} datetime={post.datetime}/></li>
+          ))}
+        </ul>
       </div>
 
       {/* 投稿ボタン */}
