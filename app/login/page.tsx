@@ -7,30 +7,42 @@ export default function LoginPage() {
 
   const [mail, setMail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [popup, setPopup] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const handleLogin = () => {
     // 仮の正解（あとでサーバーにする）
     if (mail === "test@test.com" && password === "1234") {
-      router.push("/itiran"); // ← 一覧画面へ
+      setPopup({ message: "ログインに成功しました", type: "success" });
+      setTimeout(() => {
+        router.push("/itiran"); // ← 一覧画面へ
+      }, 1500); // 1.5秒後に遷移
     } else {
-      setError("メールアドレスまたはパスワードが違います");
+      setPopup({ message: "メールアドレスまたはパスワードが違います", type: "error" });
+      setTimeout(() => {
+        setPopup(null);
+      }, 3000); // 3秒後に非表示
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 relative">
+      {/* ポップアップ */}
+      {popup && (
+        <div
+          className={`absolute top-10 px-6 py-3 rounded-md shadow-lg text-white font-bold z-50 transition-opacity ${
+            popup.type === "success" ? "bg-green-500" : "bg-red-500"
+          }`}
+        >
+          {popup.message}
+        </div>
+      )}
+
       <div className="bg-white p-6 rounded shadow w-80">
         
         <h1 className="text-xl font-bold mb-4 text-center">
           ログイン
         </h1>
         
-
-        {/* エラーメッセージ */}
-        {error && (
-          <p className="text-red-500 mb-3">{error}</p>
-        )}
 
         {/* メール */}
         <input
