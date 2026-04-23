@@ -1,20 +1,21 @@
 "use client";
 import { useState } from "react";
-import Link from "@/app/components/Link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [mail, setMail] = useState("");             {/*入力値を保存する*/}
+  const router = useRouter();
+
+  const [mail, setMail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {                       {/*どっちか空ならエラー*/}
-    if (!mail || !password) {
-      setError("メールアドレスとパスワードを入力してください");
-      return;
+  const handleLogin = () => {
+    // 仮の正解（あとでサーバーにする）
+    if (mail === "test@test.com" && password === "1234") {
+      router.push("/itiran"); // ← 一覧画面へ
+    } else {
+      setError("メールアドレスまたはパスワードが違います");
     }
-
-    setError("");
-    alert("ログイン処理（仮）");
   };
 
   return (
@@ -49,12 +50,13 @@ export default function LoginPage() {
         />
 
         {/* ボタン */}
-        <Link href="/itiran"
+        <button
           onClick={handleLogin}
-          className="w-full bg-blue-500 text-white p-2 rounded"
+          className="w-full bg-blue-500 text-white p-2"
         >
           ログイン
-        </Link>
+        </button>
+
 
       </div>
     </div>
