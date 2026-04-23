@@ -1,7 +1,7 @@
 "use client";
 import Menu from "@/app/components/aikon";
-import Link from "@/app/components/Link";
-import { useState } from "react";
+import Link from "next/link";
+import { dummyPosts } from "@/app/data/dummyPosts";
 
 export default function Page() {
   const [showComment, setShowComment] = useState(false);
@@ -12,56 +12,39 @@ export default function Page() {
       <Menu />
 
       {/* 投稿一覧エリア */}
-      <div className="mt-10 space-y-6">
-        
-        {/* 投稿カード */}
-        <div className="border rounded shadow p-4">
-          
-          {/* 見出し */}
-          <h2 className="text-lg font-bold mb-2">
-            タイトルが入ります
-          </h2>
+      <div className="mt-10 space-y-6 px-4 pb-20 max-w-2xl mx-auto">
 
-          {/* 画像枠 */}
-          <div className="w-full h-40 bg-gray-200 mb-2 flex items-center justify-center">
-            画像エリア
-          </div>
+        {dummyPosts.map((post) => (
+          <Link href={`/post/${post.id}`} key={post.id} className="block border rounded shadow p-4 hover:bg-gray-50 transition">
+            {/* 見出し */}
+            <h2 className="text-lg font-bold mb-2">
+              {post.title}
+            </h2>
 
-          {/* 本文 */}
-          <p>
-            ここに投稿の内容が入ります
-          </p>
-{/*移動予定*/}
-          {/* コメントボタン */}
-            <button onClick={() => setShowComment(!showComment)} className="bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded shadow hover:underline">
-              💬 コメントする
-            </button>
+            {/* 画像枠 */}
+            <div className="w-full h-40 bg-gray-200 mb-2 flex items-center justify-center text-gray-500 rounded">
+              {post.imageUrl ? (
+                <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover rounded" />
+              ) : (
+                "画像エリア"
+              )}
+            </div>
 
-            {/* 入力欄（条件付き表示） */}
-              {showComment && (
-                <div className="mt-3">
-                  <input
-                    type="text"
-                    placeholder="コメントを書く"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="border p-2 w-full mb-2"
-                  />
-                    <button className="bg-blue-500 text-white px-4 py-1 rounded">
-                      投稿
-                    </button>
-              </div>
-            )}
-{/*移動予定*/}
-        </div>
+            {/* 本文 */}
+            <p className="line-clamp-2 text-gray-700">
+              {post.content}
+            </p>
+          </Link>
+        ))}
+
       </div>
-        {/* 投稿ボタン */}
-        <Link
-          href="/post/new"
-          className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:no-underline"
-        >
+
+      {/* 投稿ボタン */}
+      <Link href="/post/new">
+        <button className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600 transition">
           投稿
-        </Link>
+        </button>
+      </Link>
     </div>
   );
 }
