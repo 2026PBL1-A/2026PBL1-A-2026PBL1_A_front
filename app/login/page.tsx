@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "@/app/components/Link";
 
 export default function LoginPage() {
   const [mail, setMail] = useState("");             {/*入力値を保存する*/}
@@ -48,12 +49,12 @@ export default function LoginPage() {
         />
 
         {/* ボタン */}
-        <button
+        <Link href="/itiran"
           onClick={handleLogin}
           className="w-full bg-blue-500 text-white p-2 rounded"
         >
           ログイン
-        </button>
+        </Link>
 
       </div>
     </div>
