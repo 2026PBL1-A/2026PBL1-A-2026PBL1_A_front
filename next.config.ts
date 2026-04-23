@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    // 開発/本番でバックエンドURLを切り替えるため環境変数から取得
+    const backendUrl = process.env.BACKEND_API_URL || "http://localhost:5000";
+
+    return [
+      {
+        // フロントからは /api/* を呼ぶ
+        source: "/api/:path*",
+
+        // 実際にはバックエンドへ透過転送する
+        // 例: /api/auth/login -> http://localhost:5000/auth/login
+        destination: `${backendUrl}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

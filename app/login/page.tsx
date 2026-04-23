@@ -9,18 +9,66 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [popup, setPopup] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const handleLogin = () => {
-    // 仮の正解（あとでサーバーにする）
-    if (mail === "test@test.com" && password === "1234") {
+  // 二重送信防止とボタン表示切り替え用
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+    // 空入力のまま送信させない
+    if (!mail || !password) {
+      setPopup({ message: "メールアドレスとパスワードを入力してください", type: "error" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // /api は next.config.ts の rewrite を通ってバックエンドへ転送される
+      // (ブラウザからは同一オリジンアクセスになるため CORS エラーを回避しやすい)
+      const response = await fetch(`/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // バックエンド仕様: { email, password }
+        body: JSON.stringify({ email: mail, password }),
+      });
+
+      // 4xx/5xx は成功レスポンスではないのでエラーハンドリングへ移す
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || "メールアドレスまたはパスワードが違います"
+        );
+      }
+
+      // 成功レスポンス仕様: { access_token: "..." }
+      const data = await response.json();
+
+      // 以降の認証付きAPI呼び出しに使う token をブラウザへ保存
+      localStorage.setItem("access_token", data.access_token);
+
+      // DevTools でログイン成功地点を確認するためのログ
+      console.info("[Auth] ログイン成功", {
+        email: mail,
+        tokenSaved: Boolean(localStorage.getItem("access_token")),
+      });
+      
       setPopup({ message: "ログインに成功しました", type: "success" });
       setTimeout(() => {
+        // ログイン完了後に一覧ページへ移動
         router.push("/itiran"); // ← 一覧画面へ
       }, 1500); // 1.5秒後に遷移
-    } else {
-      setPopup({ message: "メールアドレスまたはパスワードが違います", type: "error" });
+    } catch (error) {
+      // fetch失敗 / 認証失敗 / 想定外エラーをここでまとめて扱う
+      const message =
+        error instanceof Error ? error.message : "ログインに失敗しました";
+      console.error("[Auth] ログイン失敗", { email: mail, message });
+      setPopup({ message, type: "error" });
       setTimeout(() => {
         setPopup(null);
       }, 3000); // 3秒後に非表示
+    } finally {
+      // 成功・失敗どちらでもボタン状態を元に戻す
+      setIsLoading(false);
     }
   };
 
@@ -63,9 +111,10 @@ export default function LoginPage() {
         {/* ボタン */}
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
+          disabled={isLoading}
+          className="w-full bg-blue-500 text-white p-2 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
         >
-          ログイン
+          {isLoading ? "ログイン中..." : "ログイン"}
         </button>
 
         <div className="mt-4 text-center">
