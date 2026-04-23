@@ -29,20 +29,18 @@ export default function LoginPage() {
       {/* ポップアップ */}
       {popup && (
         <div
-          className={`absolute top-10 px-6 py-3 rounded-md shadow-lg text-white font-bold z-50 transition-opacity ${
-            popup.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
+          className={`absolute top-10 px-6 py-3 rounded-md shadow-lg text-white font-bold z-50 transition-opacity ${popup.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
         >
           {popup.message}
         </div>
       )}
 
       <div className="bg-white p-6 rounded shadow w-80">
-        
+
         <h1 className="text-xl font-bold mb-4 text-center">
           ログイン
         </h1>
-        
 
         {/* メール */}
         <input
