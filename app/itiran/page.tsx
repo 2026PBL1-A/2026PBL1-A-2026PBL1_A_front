@@ -1,6 +1,12 @@
+"use client";
 import Menu from "@/app/components/aikon";
+import Link from "@/app/components/Link";
+import { useState } from "react";
 
 export default function Page() {
+  const [showComment, setShowComment] = useState(false);
+  const [comment, setComment] = useState("");
+
   return (
     <div>
       <Menu />
@@ -25,19 +31,37 @@ export default function Page() {
           <p>
             ここに投稿の内容が入ります
           </p>
+{/*移動予定*/}
+          {/* コメントボタン */}
+            <button onClick={() => setShowComment(!showComment)} className="bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded shadow hover:underline">
+              💬 コメントする
+            </button>
 
+            {/* 入力欄（条件付き表示） */}
+              {showComment && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    placeholder="コメントを書く"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="border p-2 w-full mb-2"
+                  />
+                    <button className="bg-blue-500 text-white px-4 py-1 rounded">
+                      投稿
+                    </button>
+              </div>
+            )}
+{/*移動予定*/}
         </div>
-
       </div>
-
-      {/* 投稿ボタン */}
-      {/*import Link from "next/link";(遷移の際に使う予定)*/}
-
-      {/*<Link href="/○○（投稿ページの名前）">(遷移の際に使う予定)*/}
-        <button className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow">
+        {/* 投稿ボタン */}
+        <Link
+          href="/post/new"
+          className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:no-underline"
+        >
           投稿
-        </button>
-      {/*</Link>(遷移の際に使う予定)*/}
+        </Link>
     </div>
   );
 }
