@@ -25,6 +25,7 @@ export default function LoginPage() {
         <h1 className="text-xl font-bold mb-4 text-center">
           ログイン
         </h1>
+        
 
         {/* エラーメッセージ */}
         {error && (
