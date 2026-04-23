@@ -1,6 +1,7 @@
 import { dummyPosts } from "@/app/data/dummyPosts";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CommentSection from "@/app/components/CommentSection";
 
 export default async function PostDetailPage({
   params,
@@ -41,6 +42,9 @@ export default async function PostDetailPage({
         <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">
           {post.content}
         </p>
+
+        {/* コメント・回答エリア */}
+        <CommentSection postType={post.type} />
       </div>
     </div>
   );

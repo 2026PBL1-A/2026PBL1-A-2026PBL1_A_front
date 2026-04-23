@@ -1,13 +1,8 @@
-"use client";
-import { useState } from "react";
 import Menu from "@/app/components/aikon";
 import Link from "next/link";
 import { dummyPosts } from "@/app/data/dummyPosts";
 
 export default function Page() {
-  const [showComment, setShowComment] = useState(false);
-  const [comment, setComment] = useState("");
-
   return (
     <div>
       <Menu />
