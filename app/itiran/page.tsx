@@ -1,9 +1,19 @@
+"use client";
+
 import Menu from "@/app/components/aikon";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { dummyPosts } from "@/app/data/dummyPosts";
 
 export default function Page() {
-  const currentUserName = "テスト";
+  const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
+
+  useEffect(() => {
+    const storedUserName = localStorage.getItem("user_name");
+    if (storedUserName) {
+      setCurrentUserName(storedUserName);
+    }
+  }, []);
 
   return (
     <div>

@@ -43,13 +43,27 @@ export default function LoginPage() {
       // 成功レスポンス仕様: { access_token: "..." }
       const data = await response.json();
 
+      // 受け取ったユーザー名を可能なキーから取得して保存
+      const receivedUserName =
+        typeof data?.name === "string"
+          ? data.name
+          : typeof data?.username === "string"
+            ? data.username
+            : typeof data?.user?.name === "string"
+              ? data.user.name
+              : "";
+
       // 以降の認証付きAPI呼び出しに使う token をブラウザへ保存
       localStorage.setItem("access_token", data.access_token);
+      if (receivedUserName) {
+        localStorage.setItem("user_name", receivedUserName);
+      }
 
       // DevTools でログイン成功地点を確認するためのログ
       console.info("[Auth] ログイン成功", {
         email: mail,
         tokenSaved: Boolean(localStorage.getItem("access_token")),
+        userNameSaved: Boolean(localStorage.getItem("user_name")),
       });
       
       setPopup({ message: "ログインに成功しました", type: "success" });
