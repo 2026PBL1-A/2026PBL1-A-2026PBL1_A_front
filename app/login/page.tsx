@@ -63,11 +63,20 @@ export default function LoginPage() {
         {/* ボタン */}
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-500 text-white p-2"
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
         >
           ログイン
         </button>
 
+        <div className="mt-4 text-center">
+          <span className="text-sm text-gray-600">アカウントをお持ちでないですか？ </span>
+          <button
+            onClick={() => router.push("/register")}
+            className="text-sm text-blue-500 hover:underline"
+          >
+            新規登録
+          </button>
+        </div>
 
       </div>
     </div>

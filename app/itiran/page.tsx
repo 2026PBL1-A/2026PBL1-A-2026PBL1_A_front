@@ -3,12 +3,19 @@ import Link from "next/link";
 import { dummyPosts } from "@/app/data/dummyPosts";
 
 export default function Page() {
+  const currentUserName = "テスト";
+
   return (
     <div>
+      <div className="fixed top-4 left-4 z-10">
+        <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 rounded shadow-sm backdrop-blur-sm">
+          {currentUserName}
+        </span>
+      </div>
       <Menu />
 
       {/* 投稿一覧エリア */}
-      <div className="mt-10 space-y-6 px-4 pb-20 max-w-2xl mx-auto">
+      <div className="mt-16 space-y-6 px-4 pb-20 max-w-2xl mx-auto">
 
         {dummyPosts.map((post) => (
           <Link href={`/post/${post.id}`} key={post.id} className="block border rounded shadow p-4 hover:bg-gray-50 transition">
