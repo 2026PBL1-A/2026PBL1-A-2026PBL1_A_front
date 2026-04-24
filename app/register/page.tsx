@@ -10,11 +10,28 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [popup, setPopup] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState("登録中...");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     // 入力チェック
     if (!name || !mail || !password || !confirmPassword) {
       setPopup({ message: "すべての項目を入力してください", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    // メールアドレスの簡易チェック
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(mail)) {
+      setPopup({ message: "正しいメールアドレスを入力してください", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    // パスワードの最低文字数チェック(仮)
+    if (password.length < 8) {
+      setPopup({ message: "パスワードは8文字以上で入力してください", type: "error" });
       setTimeout(() => setPopup(null), 3000);
       return;
     }
@@ -25,12 +42,70 @@ export default function RegisterPage() {
       return;
     }
 
-    // 仮の登録処理（バックエンドとの通信は後で追加）
-    // 成功した場合
-    setPopup({ message: "新規登録に成功しました", type: "success" });
-    setTimeout(() => {
-      router.push("/login"); // 登録完了後はログイン画面へ遷移
-    }, 1500);
+    setIsLoading(true);
+    setLoadingLabel("登録中...");
+    try {
+      // /api は next.config.ts の rewrite を通って http://localhost:5000/user へ転送される
+      const registerResponse = await fetch("/api/user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email: mail,
+          password,
+        }),
+      });
+
+      // 4xx/5xx は成功レスポンスではないのでエラーハンドリングへ移す
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || "新規登録に失敗しました");
+      }
+
+      setLoadingLabel("ログイン中...");
+
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: mail, password }),
+      });
+
+      if (!loginResponse.ok) {
+        const errorData = await loginResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || "ログインに失敗しました");
+      }
+
+      const loginData = await loginResponse.json();
+
+      const receivedUserName =
+        typeof loginData?.name === "string"
+          ? loginData.name
+          : typeof loginData?.username === "string"
+            ? loginData.username
+            : typeof loginData?.user?.name === "string"
+              ? loginData.user.name
+              : name;
+
+      localStorage.setItem("access_token", loginData.access_token);
+      localStorage.setItem("user_name", receivedUserName);
+
+      setPopup({ message: "登録とログインに成功しました", type: "success" });
+      setTimeout(() => {
+        router.push("/itiran");
+      }, 1200);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "新規登録またはログインに失敗しました";
+      setPopup({ message, type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+    } finally {
+      setIsLoading(false);
+      setLoadingLabel("登録中...");
+    }
   };
 
   return (
@@ -88,9 +163,10 @@ export default function RegisterPage() {
         {/* ボタン */}
         <button
           onClick={handleRegister}
-          className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition-colors"
+          disabled={isLoading}
+          className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition-colors disabled:bg-green-300 disabled:cursor-not-allowed"
         >
-          登録する
+          {isLoading ? loadingLabel : "登録する"}
         </button>
 
         <div className="mt-4 text-center">
