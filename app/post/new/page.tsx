@@ -2,18 +2,70 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isUsingBackend } from "@/lib/api";
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ title, category, content });
-    alert("投稿しました（ダミー）");
-    router.push("/itiran"); // 投稿後に一覧へ遷移
+
+    if (!title || !category || !content) {
+      alert("すべてのフィールドを入力してください");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (isUsingBackend()) {
+        // バックエンドに投稿を送信
+        const token = localStorage.getItem("access_token");
+        const response = await fetch("/api/posts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            title,
+            type: category === "question" ? "question" : "creation",
+            content,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `投稿に失敗しました (${response.status})`
+          );
+        }
+
+        console.info("[Post] バックエンドに投稿を送信しました");
+        alert("投稿しました");
+      } else {
+        // ローカルモード（ダミー処理）
+        console.info("[Post] ローカルダミーで投稿を処理しました", {
+          title,
+          category,
+          content,
+        });
+        alert("投稿しました（ローカル）");
+      }
+
+      // 投稿後に一覧へ遷移
+      router.push("/itiran");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "投稿に失敗しました";
+      console.error("[Post] 投稿エラー:", message);
+      alert(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,7 +103,7 @@ export default function CreatePostPage() {
               required
             >
               <option value="">選択してください</option>
-              <option value="post">投稿</option>
+              <option value="creation">制作物</option>
               <option value="question">質問</option>
             </select>
           </div>
@@ -73,9 +125,10 @@ export default function CreatePostPage() {
           {/* 投稿ボタン */}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            投稿
+            {isLoading ? "投稿中..." : "投稿"}
           </button>
         </form>
       </div>

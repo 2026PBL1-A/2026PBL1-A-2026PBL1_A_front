@@ -3,6 +3,19 @@
 const API_BASE_URL = "/api";
 
 /**
+ * バックエンドを使用するかどうかを判定
+ * 環境変数 NEXT_PUBLIC_USE_BACKEND が false の場合、ローカルデータのみを使用
+ */
+export function isUsingBackend(): boolean {
+  if (typeof window === "undefined") {
+    // サーバーサイド
+    return process.env.NEXT_PUBLIC_USE_BACKEND !== "false";
+  }
+  // クライアントサイド
+  return process.env.NEXT_PUBLIC_USE_BACKEND !== "false";
+}
+
+/**
  * 認証付きで API をコール
  * - localStorage から access_token を取得
  * - Authorization: Bearer <token> を自動付加

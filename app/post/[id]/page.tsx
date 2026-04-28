@@ -2,6 +2,7 @@ import { dummyPosts } from "@/app/data/dummyPosts";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CommentSection from "@/app/components/CommentSection";
+import { isUsingBackend } from "@/lib/api";
 
 export default async function PostDetailPage({
   params,
@@ -9,7 +10,35 @@ export default async function PostDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  const post = dummyPosts.find((p) => p.id === resolvedParams.id);
+  
+  let post = null;
+
+  if (isUsingBackend()) {
+    // バックエンドから投稿を取得
+    try {
+      const response = await fetch(
+        `${process.env.BACKEND_API_URL || "http://localhost:5000"}/posts/${resolvedParams.id}`,
+        { cache: "no-store" }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        post = data;
+        console.info(`[Post Detail] バックエンドから投稿 ID ${resolvedParams.id} を取得`);
+      }
+    } catch (error) {
+      console.error(`[Post Detail] バックエンド取得エラー (ID: ${resolvedParams.id}):`, error);
+      // フォールバック: ダミーデータ
+    }
+  }
+
+  // バックエンド取得失敗またはローカルモードの場合、ダミーデータを使用
+  if (!post) {
+    post = dummyPosts.find((p) => p.id === resolvedParams.id);
+    if (post) {
+      console.info(`[Post Detail] ローカルダミーデータを使用 (ID: ${resolvedParams.id})`);
+    }
+  }
 
   if (!post) {
     notFound();

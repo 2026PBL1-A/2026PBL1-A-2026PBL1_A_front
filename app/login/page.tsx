@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isUsingBackend } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,50 +22,68 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // /api は next.config.ts の rewrite を通ってバックエンドへ転送される
-      // (ブラウザからは同一オリジンアクセスになるため CORS エラーを回避しやすい)
-      const response = await fetch(`/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // バックエンド仕様: { email, password }
-        body: JSON.stringify({ email: mail, password }),
-      });
+      // バックエンド使用モード
+      if (isUsingBackend()) {
+        // /api は next.config.ts の rewrite を通ってバックエンドへ転送される
+        // (ブラウザからは同一オリジンアクセスになるため CORS エラーを回避しやすい)
+        const response = await fetch(`/api/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // バックエンド仕様: { email, password }
+          body: JSON.stringify({ email: mail, password }),
+        });
 
-      // 4xx/5xx は成功レスポンスではないのでエラーハンドリングへ移す
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || "メールアドレスまたはパスワードが違います"
-        );
+        // 4xx/5xx は成功レスポンスではないのでエラーハンドリングへ移す
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || "メールアドレスまたはパスワードが違います"
+          );
+        }
+
+        // 成功レスポンス仕様: { access_token: "..." }
+        const data = await response.json();
+
+        // 受け取ったユーザー名を可能なキーから取得して保存
+        const receivedUserName =
+          typeof data?.name === "string"
+            ? data.name
+            : typeof data?.username === "string"
+              ? data.username
+              : typeof data?.user?.name === "string"
+                ? data.user.name
+                : "";
+
+        // 以降の認証付きAPI呼び出しに使う token をブラウザへ保存
+        localStorage.setItem("access_token", data.access_token);
+        if (receivedUserName) {
+          localStorage.setItem("user_name", receivedUserName);
+        }
+
+        // DevTools でログイン成功地点を確認するためのログ
+        console.info("[Auth] ログイン成功（バックエンド）", {
+          email: mail,
+          tokenSaved: Boolean(localStorage.getItem("access_token")),
+          userNameSaved: Boolean(localStorage.getItem("user_name")),
+        });
+      } else {
+        // ローカルモード（ダミー認証）
+        if (mail === "test@test.com" && password === "pass1234") {
+          const dummyToken = "dummy_token_" + Date.now();
+          localStorage.setItem("access_token", dummyToken);
+          localStorage.setItem("user_name", "テストユーザー");
+
+          console.info("[Auth] ログイン成功（ローカル）", {
+            email: mail,
+            tokenSaved: Boolean(localStorage.getItem("access_token")),
+            userNameSaved: Boolean(localStorage.getItem("user_name")),
+          });
+        } else {
+          throw new Error("メールアドレスまたはパスワードが違います");
+        }
       }
-
-      // 成功レスポンス仕様: { access_token: "..." }
-      const data = await response.json();
-
-      // 受け取ったユーザー名を可能なキーから取得して保存
-      const receivedUserName =
-        typeof data?.name === "string"
-          ? data.name
-          : typeof data?.username === "string"
-            ? data.username
-            : typeof data?.user?.name === "string"
-              ? data.user.name
-              : "";
-
-      // 以降の認証付きAPI呼び出しに使う token をブラウザへ保存
-      localStorage.setItem("access_token", data.access_token);
-      if (receivedUserName) {
-        localStorage.setItem("user_name", receivedUserName);
-      }
-
-      // DevTools でログイン成功地点を確認するためのログ
-      console.info("[Auth] ログイン成功", {
-        email: mail,
-        tokenSaved: Boolean(localStorage.getItem("access_token")),
-        userNameSaved: Boolean(localStorage.getItem("user_name")),
-      });
       
       setPopup({ message: "ログインに成功しました", type: "success" });
       setTimeout(() => {
