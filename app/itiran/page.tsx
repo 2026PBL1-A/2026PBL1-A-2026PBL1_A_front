@@ -113,6 +113,13 @@ export default function Page() {
           投稿
         </button>
       </Link>
+
+      {/* 移動予定プロフィール編集ボタン */}
+      <Link href="">
+        <button className="fixed bottom-20 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600 transition">
+          プロフィール編集
+        </button>
+      </Link>
     </div>
   );
 }
