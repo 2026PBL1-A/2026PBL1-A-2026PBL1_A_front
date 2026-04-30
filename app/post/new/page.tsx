@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
+import Image from "next/image";
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState("");
@@ -10,9 +11,25 @@ export default function CreatePostPage() {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault(); // ← これも大事
+
+  const formData = new FormData();
+
+  formData.append("title", title);
+  formData.append("content", content);
+
+  if (image) {
+    formData.append("image", image);
+  }
+
+  // ここで送信
+  await fetch("/api/post", {
+    method: "POST",
+    body: formData,
+  });
 
     if (!title || !category || !content) {
       alert("すべてのフィールドを入力してください");
@@ -121,6 +138,39 @@ export default function CreatePostPage() {
               required
             />
           </div>
+
+          {/* 画像 */}
+        <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              画像
+            </label>
+
+          {/* アップロードエリア */}
+            <label className="inline-block px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600">
+              📷 画像を選択
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setImage(e.target.files[0]);
+                  }
+                }}
+              />
+          </label>
+
+          {/* プレビュー */}
+          {image && (
+            <Image
+              src={URL.createObjectURL(image)}
+              alt="preview"
+              width={400}
+              height={200}
+              className="object-contain max-h-full max-w-full"
+            />
+          )}
+        </div>
 
           {/* 投稿ボタン */}
           <button
