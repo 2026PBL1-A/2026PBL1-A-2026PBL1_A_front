@@ -27,16 +27,16 @@ export default function ProfileEditPage() {
     if (storedPortfolio) setPortfolioUrl(storedPortfolio);
   }, []);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setAvatarUrl(reader.result as string);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +84,8 @@ export default function ProfileEditPage() {
 
           <form onSubmit={handleSave} className="space-y-6">
             
-            {/* アイコン画像 */}
+            {/* アイコン画像 (後で実装するためコメントアウト) */}
+            {/*
             <div className="flex flex-col items-center mb-8">
               <div className="w-24 h-24 rounded-full border-4 border-gray-100 bg-gray-200 overflow-hidden shadow-sm flex items-center justify-center shrink-0 mb-4 relative group">
                 {avatarUrl ? (
@@ -93,7 +94,7 @@ export default function ProfileEditPage() {
                   <span className="text-gray-400 font-bold text-3xl">?</span>
                 )}
                 
-                {/* オーバーレイ */}
+                {/* オーバーレイ *\/}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -105,11 +106,12 @@ export default function ProfileEditPage() {
                   type="file" 
                   accept="image/*" 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={handleImageChange}
+                  // onChange={handleImageChange}
                 />
               </div>
               <p className="text-xs text-gray-500">アイコンをクリックして画像を変更</p>
             </div>
+            */}
 
             {/* 表示名 */}
             <div>

@@ -47,10 +47,13 @@ export default async function PostDetailPage({
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="px-4 max-w-3xl mx-auto">
-        <Link href="/itiran" className="inline-flex items-center text-blue-500 hover:text-blue-600 transition-colors mb-8 font-medium">
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          一覧へ戻る
-        </Link>
+        <div className="mb-6">
+          <Link href="/itiran" className="text-gray-900 bg-white/80 backdrop-blur hover:bg-gray-200 inline-flex items-center justify-center w-10 h-10 rounded-full transition shadow-sm border border-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </Link>
+        </div>
         
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
           {/* 画像がある場合はヒーロー画像として配置 */}

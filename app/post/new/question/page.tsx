@@ -11,7 +11,7 @@ export default function CreateQuestionPage() {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [image, setImage] = useState<File | null>(null);
+  // const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +22,9 @@ export default function CreateQuestionPage() {
     formData.append("category", category);
     formData.append("type", "question"); // 質問固定
 
-    if (image) {
-      formData.append("image", image);
-    }
+    // if (image) {
+    //   formData.append("image", image);
+    // }
 
     if (!title || !category || !content) {
       alert("すべてのフィールドを入力してください");
@@ -118,7 +118,8 @@ export default function CreateQuestionPage() {
             />
           </div>
 
-          {/* 画像 */}
+          {/* 画像 (後で実装するためコメントアウト) */}
+          {/*
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               画像
@@ -130,23 +131,36 @@ export default function CreateQuestionPage() {
                 accept="image/*"
                 className="hidden"
                 onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) setImage(e.target.files[0]);
+                  if (e.target.files && e.target.files[0]) {
+                    // setImage(e.target.files[0]);
+                  }
                 }}
               />
             </label>
-            {image && (
+            {/* image && (
               <Image src={URL.createObjectURL(image)} alt="preview" width={400} height={200} className="object-contain max-h-full max-w-full" />
-            )}
+            ) *\/}
           </div>
+          */}
 
-          {/* 投稿ボタン */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "投稿中..." : "質問を投稿"}
-          </button>
+          {/* 投稿・キャンセルボタン */}
+          <div className="flex gap-4 pt-2">
+            <button
+              type="button"
+              onClick={() => router.push("/itiran")}
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-400 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "投稿中..." : "質問を投稿"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

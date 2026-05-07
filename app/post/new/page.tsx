@@ -11,7 +11,7 @@ export default function CreatePostPage() {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [image, setImage] = useState<File | null>(null);
+  // const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -21,9 +21,9 @@ export default function CreatePostPage() {
   formData.append("title", title);
   formData.append("content", content);
 
-  if (image) {
-    formData.append("image", image);
-  }
+//   if (image) {
+//     formData.append("image", image);
+//   }
 
   // ここで送信
   await fetch("/api/post", {
@@ -139,13 +139,13 @@ export default function CreatePostPage() {
             />
           </div>
 
-          {/* 画像 */}
-        <div className="space-y-2">
+          {/* 画像 (後で実装するためコメントアウト) */}
+          {/*
+          <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               画像
             </label>
 
-          {/* アップロードエリア */}
             <label className="inline-block px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600">
               📷 画像を選択
               <input
@@ -154,32 +154,42 @@ export default function CreatePostPage() {
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
-                    setImage(e.target.files[0]);
+                    // setImage(e.target.files[0]);
                   }
                 }}
               />
-          </label>
+            </label>
 
-          {/* プレビュー */}
-          {image && (
-            <Image
-              src={URL.createObjectURL(image)}
-              alt="preview"
-              width={400}
-              height={200}
-              className="object-contain max-h-full max-w-full"
-            />
-          )}
-        </div>
+            {/* image && (
+              <Image
+                src={URL.createObjectURL(image)}
+                alt="preview"
+                width={400}
+                height={200}
+                className="object-contain max-h-full max-w-full"
+              />
+            ) *\/}
+          </div>
+          */}
 
-          {/* 投稿ボタン */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "投稿中..." : "投稿"}
-          </button>
+          {/* 投稿・キャンセルボタン */}
+          <div className="flex gap-4 pt-2">
+            <button
+              type="button"
+              onClick={() => router.push("/itiran")}
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "投稿中..." : "投稿"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

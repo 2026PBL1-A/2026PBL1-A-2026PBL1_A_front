@@ -11,6 +11,7 @@ export default function Page() {
   const [posts, setPosts] = useState<Post[]>(dummyPosts);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<"all" | "creation" | "question">("all");
 
   useEffect(() => {
     // ユーザー名を取得
@@ -59,8 +60,14 @@ export default function Page() {
     fetchPosts();
   }, []);
 
+  // フィルタリング
+  const filteredPosts = posts.filter((post) => {
+    if (filterType === "all") return true;
+    return post.type === filterType;
+  });
+
   // 投稿を新しい順にソート
-  const sortedPosts = [...posts].sort((a, b) => {
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return dateB - dateA;
@@ -77,6 +84,35 @@ export default function Page() {
 
       {/* 投稿一覧エリア */}
       <div className="mt-16 px-4 pb-20 max-w-4xl mx-auto">
+        
+        {/* フィルタボタン */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setFilterType("all")}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+              filterType === "all" ? "bg-gray-800 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            全部表示
+          </button>
+          <button
+            onClick={() => setFilterType("creation")}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+              filterType === "creation" ? "bg-blue-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            制作物を表示
+          </button>
+          <button
+            onClick={() => setFilterType("question")}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+              filterType === "question" ? "bg-orange-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            質問を表示
+          </button>
+        </div>
+
         {error && (
           <div className="p-3 mb-6 bg-yellow-100 text-yellow-800 rounded">
             ⚠️ {error} (ダミーデータを表示しています)
@@ -89,32 +125,21 @@ export default function Page() {
 
           {sortedPosts.map((post) => (
             <Link href={`/post/${post.id}`} key={post.id} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              {/* 画像枠 */}
-              <div className="w-full aspect-video bg-gray-50 flex items-center justify-center text-gray-400 overflow-hidden relative">
-                {post.imageUrl ? (
-                  <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center">
-                    <svg className="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span className="text-xs font-medium text-gray-400">No Image</span>
-                  </div>
-                )}
-                {/* タグを画像の上に絶対配置 */}
-                <div className="absolute top-3 left-3">
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.type === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
+              {/* コンテンツエリア */}
+              <div className="p-6 flex flex-col flex-grow">
+                <div className="flex justify-between items-center mb-3">
+                  {/* タグ */}
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.type === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
                     {post.type === 'creation' ? '制作物' : '質問'}
                   </span>
+                  {/* 日付 */}
+                  {post.createdAt && (
+                    <div className="text-xs text-gray-500 font-medium">
+                      {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* コンテンツエリア */}
-              <div className="p-5 flex flex-col flex-grow">
-                {post.createdAt && (
-                  <div className="text-xs text-gray-500 mb-2 font-medium">
-                    {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                )}
-                <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
                   {post.title}
                 </h2>
                 <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
