@@ -14,7 +14,7 @@ export default function CreatePostPage() {
   const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault(); // ← これも大事
+  e.preventDefault();
 
   const formData = new FormData();
 
