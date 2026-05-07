@@ -68,8 +68,8 @@ export default function Page() {
 
   // 投稿を新しい順にソート
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
     return dateB - dateA;
   });
 
@@ -84,30 +84,27 @@ export default function Page() {
 
       {/* 投稿一覧エリア */}
       <div className="mt-16 px-4 pb-20 max-w-4xl mx-auto">
-        
+
         {/* フィルタボタン */}
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setFilterType("all")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-              filterType === "all" ? "bg-gray-800 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-            }`}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "all" ? "bg-gray-800 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
           >
             全部表示
           </button>
           <button
             onClick={() => setFilterType("creation")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-              filterType === "creation" ? "bg-blue-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-            }`}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "creation" ? "bg-blue-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
           >
             制作物を表示
           </button>
           <button
             onClick={() => setFilterType("question")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-              filterType === "question" ? "bg-orange-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-            }`}
+            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "question" ? "bg-orange-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              }`}
           >
             質問を表示
           </button>
@@ -133,9 +130,9 @@ export default function Page() {
                     {post.type === 'creation' ? '制作物' : '質問'}
                   </span>
                   {/* 日付 */}
-                  {post.createdAt && (
+                  {post.created_at && (
                     <div className="text-xs text-gray-500 font-medium">
-                      {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -145,7 +142,7 @@ export default function Page() {
                 <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
                   {post.content}
                 </p>
-                
+
                 {/* 続きを読む要素 */}
                 <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-sm font-semibold text-blue-500 group-hover:text-blue-600 transition-colors">詳細を見る</span>

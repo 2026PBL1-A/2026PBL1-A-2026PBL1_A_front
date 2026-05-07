@@ -19,7 +19,7 @@ export default function CreateCreationPage() {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append("category", category);
+    formData.append("tag", category);
     formData.append("type", "creation"); // 制作物固定
 
     // if (image) {
@@ -44,7 +44,7 @@ export default function CreateCreationPage() {
           body: JSON.stringify({
             title,
             type: "creation",
-            category,
+            tag: category,
             content,
           }),
         });
