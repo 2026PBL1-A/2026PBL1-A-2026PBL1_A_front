@@ -43,7 +43,6 @@ export default function CreateCreationPage() {
           },
           body: JSON.stringify({
             title,
-            type: "creation",
             tag: category,
             content,
           }),
