@@ -11,10 +11,10 @@ export default function ProfilePage() {
   const [bio, setBio] = useState<string>("自己紹介がまだ設定されていません。");
   const [portfolioUrl, setPortfolioUrl] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState("2026/05/01 14:40"); // 仮の更新日時
-  
+
   // タブの状態管理
   const [activeTab, setActiveTab] = useState<"skills" | "creations" | "questions">("skills");
-  
+
   // ユーザーの投稿一覧（ダミー）
   const [userPosts, setUserPosts] = useState<Post[]>([]);
 
@@ -40,7 +40,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Menu />
-      
+
       <div className="max-w-2xl mx-auto pt-16 px-4">
         {/* 戻るボタン（Xの矢印ボタン風） */}
         <div className="mb-4">
@@ -56,7 +56,7 @@ export default function ProfilePage() {
           {/* ヘッダー背景画像 */}
           <div className="h-40 bg-gradient-to-r from-blue-400 to-indigo-500 relative">
           </div>
-          
+
           <div className="px-6 pb-4">
             {/* アイコンと編集ボタン */}
             <div className="relative flex justify-between items-start mb-4">
@@ -67,7 +67,7 @@ export default function ProfilePage() {
                   <span className="text-gray-600 font-bold text-5xl leading-none">{userName.charAt(0)}</span>
                 )}
               </div>
-              
+
               <div className="mt-4">
                 <Link href="/profile/edit">
                   <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
@@ -97,7 +97,7 @@ export default function ProfilePage() {
                 {bio}
               </p>
             </div>
-            
+
             {/* リンクなど付帯情報 */}
             {portfolioUrl && (
               <div className="flex items-center text-blue-500 mb-4 text-sm">
@@ -186,9 +186,9 @@ export default function ProfilePage() {
 
                         {/* コンテンツエリア */}
                         <div className="p-5 flex flex-col flex-grow">
-                          {post.createdAt && (
+                          {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -238,9 +238,9 @@ export default function ProfilePage() {
 
                         {/* コンテンツエリア */}
                         <div className="p-5 flex flex-col flex-grow">
-                          {post.createdAt && (
+                          {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">

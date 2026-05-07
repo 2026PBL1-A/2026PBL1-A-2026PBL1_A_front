@@ -29,7 +29,7 @@ export default function Page() {
         if (isUsingBackend()) {
           // バックエンドから投稿データを取得
           const token = localStorage.getItem("access_token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
           // 制作物 (postテーブル) と 質問 (questionテーブル) の両方から取得
           const [postsRes, questionsRes] = await Promise.all([
@@ -42,7 +42,7 @@ export default function Page() {
             const data = await postsRes.json();
             const arr = Array.isArray(data) ? data : data.posts || [];
             // postテーブルからの取得データは 'creation'
-            postsData = arr.map(p => ({ ...p, type: 'creation' }));
+            postsData = arr.map((p: any) => ({ ...p, type: 'creation' }));
           }
 
           let questionsData: any[] = [];
@@ -50,7 +50,7 @@ export default function Page() {
             const data = await questionsRes.json();
             const arr = Array.isArray(data) ? data : data.questions || [];
             // questionテーブルからの取得データは 'question'
-            questionsData = arr.map(q => ({ ...q, type: 'question' }));
+            questionsData = arr.map((q: any) => ({ ...q, type: 'question' }));
           }
 
           // 両方とも取得に失敗（サーバーエラーなど）した場合はエラーとする
