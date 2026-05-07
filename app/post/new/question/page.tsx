@@ -19,7 +19,7 @@ export default function CreateQuestionPage() {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append("category", category);
+    formData.append("tag", category);
     formData.append("type", "question"); // 質問固定
 
     // if (image) {
@@ -35,7 +35,7 @@ export default function CreateQuestionPage() {
     try {
       if (isUsingBackend()) {
         const token = localStorage.getItem("access_token");
-        const response = await fetch("/api/posts", {
+        const response = await fetch("/api/questions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -44,7 +44,7 @@ export default function CreateQuestionPage() {
           body: JSON.stringify({
             title,
             type: "question",
-            category,
+            tag: category,
             content,
           }),
         });

@@ -16,15 +16,26 @@ export default async function PostDetailPage({
   if (isUsingBackend()) {
     // バックエンドから投稿を取得
     try {
-      const response = await fetch(
+      let response = await fetch(
         `${process.env.BACKEND_API_URL || "http://localhost:5000"}/posts/${resolvedParams.id}`,
         { cache: "no-store" }
       );
 
       if (response.ok) {
         const data = await response.json();
-        post = data;
+        post = { ...data, type: "creation" };
         console.info(`[Post Detail] バックエンドから投稿 ID ${resolvedParams.id} を取得`);
+      } else {
+        // posts になければ questions を探す
+        const qResponse = await fetch(
+          `${process.env.BACKEND_API_URL || "http://localhost:5000"}/questions/${resolvedParams.id}`,
+          { cache: "no-store" }
+        );
+        if (qResponse.ok) {
+          const data = await qResponse.json();
+          post = { ...data, type: "question" };
+          console.info(`[Post Detail] バックエンドから質問 ID ${resolvedParams.id} を取得`);
+        }
       }
     } catch (error) {
       console.error(`[Post Detail] バックエンド取得エラー (ID: ${resolvedParams.id}):`, error);
@@ -83,11 +94,11 @@ export default async function PostDetailPage({
               
               {/* メタデータ */}
               <div className="flex items-center text-gray-500 text-sm">
-                {post.createdAt && (
+                {(post.createdAt || post.created_at) && (
                   <div className="flex items-center mr-4">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <time dateTime={post.createdAt}>
-                      {new Date(post.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    <time dateTime={post.createdAt || post.created_at}>
+                      {new Date(post.createdAt || post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </time>
                   </div>
                 )}

@@ -29,18 +29,37 @@ export default function Page() {
         if (isUsingBackend()) {
           // バックエンドから投稿データを取得
           const token = localStorage.getItem("access_token");
-          const response = await fetch("/api/posts", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          });
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-          if (!response.ok) {
-            throw new Error(`Failed to fetch posts: ${response.status}`);
+          // 制作物 (postテーブル) と 質問 (questionテーブル) の両方から取得
+          const [postsRes, questionsRes] = await Promise.all([
+            fetch("/api/posts", { headers }).catch(() => null),
+            fetch("/api/questions", { headers }).catch(() => null),
+          ]);
+
+          let postsData: any[] = [];
+          if (postsRes && postsRes.ok) {
+            const data = await postsRes.json();
+            const arr = Array.isArray(data) ? data : data.posts || [];
+            // postテーブルからの取得データは 'creation'
+            postsData = arr.map(p => ({ ...p, type: 'creation' }));
           }
 
-          const data = await response.json();
-          // バックエンドのレスポンス形式に応じて調整（配列を想定）
-          setPosts(Array.isArray(data) ? data : data.posts || []);
-          console.info("[Posts] バックエンドから投稿を取得");
+          let questionsData: any[] = [];
+          if (questionsRes && questionsRes.ok) {
+            const data = await questionsRes.json();
+            const arr = Array.isArray(data) ? data : data.questions || [];
+            // questionテーブルからの取得データは 'question'
+            questionsData = arr.map(q => ({ ...q, type: 'question' }));
+          }
+
+          // 両方とも取得に失敗（サーバーエラーなど）した場合はエラーとする
+          if ((!postsRes || !postsRes.ok) && (!questionsRes || !questionsRes.ok)) {
+            throw new Error(`Failed to fetch posts and questions`);
+          }
+
+          setPosts([...postsData, ...questionsData]);
+          console.info("[Posts] バックエンドから投稿(post)と質問(question)を取得しました");
         } else {
           // ローカルダミーデータを使用
           setPosts(dummyPosts);
