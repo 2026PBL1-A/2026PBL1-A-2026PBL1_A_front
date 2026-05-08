@@ -188,7 +188,7 @@ export default function ProfilePage() {
                         <div className="p-5 flex flex-col flex-grow">
                           {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                         <div className="p-5 flex flex-col flex-grow">
                           {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">

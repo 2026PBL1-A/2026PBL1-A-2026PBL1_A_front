@@ -151,7 +151,7 @@ export default function Page() {
                   {/* 日付 */}
                   {post.created_at && (
                     <div className="text-xs text-gray-500 font-medium">
-                      {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
                     </div>
                   )}
                 </div>
