@@ -4,25 +4,39 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Menu from "@/app/components/aikon";
+import Image from "next/image";
 
 export default function ProfileEditPage() {
   const router = useRouter();
   
   const [userName, setUserName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+  typeof window !== "undefined"
+    ? localStorage.getItem("avatar_url")
+    : null
+);
   const [bio, setBio] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+  const icons = [
+  "/icons/さくらんぼアイコン.png",
+  "/icons/チューリップアイコン.png",
+  "/icons/幾何学図形アイコン.png",
+  "/icons/魚アイコン.png",
+  "/icons/犬アイコン.png",
+  "/icons/人食いザメアイコン.png",
+  "/icons/闘牛アイコン.png",
+  "/icons/狼アイコン.png",
+];
 
   useEffect(() => {
     // 既存のユーザー情報を読み込む
     const storedName = localStorage.getItem("user_name");
-    const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
     const storedBio = localStorage.getItem("user_bio");
     const storedPortfolio = localStorage.getItem("user_portfolio");
 
     if (storedName) setUserName(storedName);
-    if (storedAvatar) setAvatarUrl(storedAvatar);
     if (storedBio) setBio(storedBio);
     if (storedPortfolio) setPortfolioUrl(storedPortfolio);
   }, []);
@@ -113,6 +127,63 @@ export default function ProfileEditPage() {
             </div>
             */}
 
+            <div className="space-y-4">
+      {/* 開くボタン */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+      >
+        アイコンを選ぶ
+      </button>
+
+      {/* 選択中アイコン */}
+      {avatarUrl && (
+        <div>
+          <p className="text-sm text-gray-500 mb-2">
+            選択中のアイコン
+          </p>
+
+          <Image
+            src={avatarUrl}
+            alt="selected icon"
+            width={80}
+            height={80}
+            className="rounded-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* アイコン一覧 */}
+      {open && (
+        <div className="flex gap-4 flex-wrap">
+          {icons.map((icon) => (
+            <button
+              key={icon}
+              type="button"
+              onClick={() => {
+                setAvatarUrl(icon);
+                setOpen(false);
+              }}
+              className={`p-1 rounded-full border-4 transition hover:scale-105 ${
+                avatarUrl === icon
+                  ? "border-blue-500"
+                  : "border-transparent"
+              }`}
+            >
+              <Image
+                src={icon}
+                alt="icon"
+                width={80}
+                height={80}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
             {/* 表示名 */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -141,19 +212,7 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {/* 制作物URL */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                制作物のURL (ポートフォリオ、GitHubなど)
-              </label>
-              <input
-                type="url"
-                className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition"
-                placeholder="https://example.com"
-                value={portfolioUrl}
-                onChange={(e) => setPortfolioUrl(e.target.value)}
-              />
-            </div>
+            
 
             {/* ボタングループ */}
             <div className="pt-6 flex gap-4">

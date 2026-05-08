@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
+import Image from "next/image";
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState("ゲストユーザー");
@@ -11,6 +12,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState<string>("自己紹介がまだ設定されていません。");
   const [portfolioUrl, setPortfolioUrl] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState("2026/05/01 14:40"); // 仮の更新日時
+  const [selectedIcon, setSelectedIcon] = useState("");
 
   // タブの状態管理
   const [activeTab, setActiveTab] = useState<"skills" | "creations" | "questions">("skills");
@@ -26,10 +28,12 @@ export default function ProfilePage() {
     const storedPortfolio = localStorage.getItem("user_portfolio");
 
     if (storedName) setUserName(storedName);
-    if (storedAvatar) setAvatarUrl(storedAvatar);
     if (storedBio) setBio(storedBio);
     if (storedPortfolio) setPortfolioUrl(storedPortfolio);
-
+    if (storedAvatar) {
+      setAvatarUrl(storedAvatar);
+      setSelectedIcon(storedAvatar);
+    }
     // 擬似的にこのユーザーの投稿としてダミーデータをセット
     setUserPosts(dummyPosts);
   }, []);
@@ -61,10 +65,18 @@ export default function ProfilePage() {
             {/* アイコンと編集ボタン */}
             <div className="relative flex justify-between items-start mb-4">
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 z-10 shadow-sm bg-white">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                {selectedIcon ? (
+                  <Image
+                  src={selectedIcon}
+                  alt="Profile"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <span className="text-gray-600 font-bold text-5xl leading-none">{userName.charAt(0)}</span>
+                  <span className="text-gray-600 font-bold text-5xl leading-none">
+                    {userName.charAt(0)}
+                  </span>
                 )}
               </div>
 
