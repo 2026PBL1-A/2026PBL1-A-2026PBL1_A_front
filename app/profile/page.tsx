@@ -89,51 +89,62 @@ export default function ProfilePage() {
         const storedUserId = localStorage.getItem("user_id");
         const storedProfileId = localStorage.getItem("profile_id");
 
-        // ID でプロフィールを取得
-        let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
+        // ID でプロフィールを取得（レスポンスは { profile, user } の形）
+        let profileResp: Awaited<ReturnType<typeof getProfile>> | null = null;
 
         // まず保存済み profile_id があればそれを優先して詳細を引く
         if (storedProfileId) {
           try {
-            profile = await getProfile(storedProfileId);
+            profileResp = await getProfile(storedProfileId);
           } catch {
-            profile = null;
+            profileResp = null;
           }
         }
 
         // profile_id がない場合は一覧から user_id に一致するプロフィールを探す
-        if (!profile) {
+        if (!profileResp) {
           const profiles = await getAllProfiles();
           if (storedUserId) {
-            profile = profiles.find((p) => p.user_id === storedUserId) ?? null;
+            const found = profiles.find((p) => p.user && p.user.id === storedUserId) ?? null;
+            if (found) profileResp = found;
           } else if (profiles.length === 1) {
             // user_id 未保存時の最小フォールバック（単一プロフィール環境）
-            profile = profiles[0];
+            profileResp = profiles[0];
           }
         }
 
-        if (!profile && token && storedUserId) {
+        if (!profileResp && token && storedUserId) {
           // バックエンド連携時は localStorage から読まないため、空初期値で作成
-          profile = await createProfile({ bio: "", tag: "" });
+          const created = await createProfile({ bio: "", tag: "" });
+          profileResp = { profile: created, user: null } as any;
         }
 
-        if (!profile) {
+        if (!profileResp) {
           setUserPosts([]);
           return;
         }
 
         // 次回以降の取得を安定させるため、判明した ID を保存し直す
-        localStorage.setItem("profile_id", profile.id);
-        if (profile.user_id) {
-          localStorage.setItem("user_id", profile.user_id);
+        localStorage.setItem("profile_id", profileResp.profile.id);
+        if (profileResp.user?.id) {
+          localStorage.setItem("user_id", profileResp.user.id);
         }
 
-        if (profile.bio && profile.bio.trim()) {
-          setBio(profile.bio);
-          localStorage.setItem("user_bio", profile.bio);
+        // ユーザー情報が含まれていれば localStorage に反映（メールも含む）
+        if (profileResp.user?.username) {
+          localStorage.setItem("user_name", profileResp.user.username);
+        }
+        if (profileResp.user?.email) {
+          setUserEmail(profileResp.user.email);
+          localStorage.setItem("user_email", profileResp.user.email);
         }
 
-        const parsedSkills = (profile.tag || "")
+        if (profileResp.profile.bio && profileResp.profile.bio.trim()) {
+          setBio(profileResp.profile.bio);
+          localStorage.setItem("user_bio", profileResp.profile.bio);
+        }
+
+        const parsedSkills = (profileResp.profile.tag || "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
@@ -142,9 +153,10 @@ export default function ProfilePage() {
         }
 
         // プロフィール所有者の投稿と質問を並行取得する
+        const profileIdToUse = profileResp.profile.id;
         const [profilePosts, profileQuestions] = await Promise.all([
-          getProfilePosts(profile.id).catch(() => []),
-          getProfileQuestions(profile.id).catch(() => []),
+          getProfilePosts(profileIdToUse).catch(() => []),
+          getProfileQuestions(profileIdToUse).catch(() => []),
         ]);
 
         // 投稿と質問を type フィールドをつけて統合する
@@ -249,7 +261,7 @@ export default function ProfilePage() {
             <div className="mb-4">
               <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">{userName}</h1>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-gray-500 text-sm">@{userEmail || `user_${userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id"}`}</p>
+                <p className="text-gray-500 text-sm">{userEmail || `user_${userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id"}`}</p>
                 <div className="flex items-center text-gray-400 text-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

@@ -13,6 +13,17 @@ export interface ProfileData {
   avatarUrl?: string;
 }
 
+export interface UserData {
+  id: string;
+  username?: string;
+  email?: string;
+}
+
+export interface ProfileResponse {
+  profile: ProfileData;
+  user: UserData | null;
+}
+
 export interface UpdateProfileRequest {
   username?: string;
   bio?: string;
@@ -56,13 +67,13 @@ export async function updateProfile(payload: UpdateProfileRequest): Promise<Upda
   });
 }
 
-export async function getAllProfiles(): Promise<ProfileData[]> {
-  return apiCall<ProfileData[]>("/profiles", { method: "GET" });
+export async function getAllProfiles(): Promise<ProfileResponse[]> {
+  return apiCall<ProfileResponse[]>("/profiles", { method: "GET" });
 }
 
 // profileId を基点に詳細と所有投稿を取得する
-export async function getProfile(profileId: string): Promise<ProfileData> {
-  return apiCall<ProfileData>(`/profiles/${encodeURIComponent(profileId)}`, { method: "GET" });
+export async function getProfile(profileId: string): Promise<ProfileResponse> {
+  return apiCall<ProfileResponse>(`/profiles/${encodeURIComponent(profileId)}`, { method: "GET" });
 }
 
 // プロフィール所有者の投稿一覧を取得
