@@ -14,6 +14,7 @@ export default function ProfilePage() {
   const [portfolioUrl, setPortfolioUrl] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState("2026/05/01 14:40"); // 仮の更新日時
   const [selectedIcon, setSelectedIcon] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   // タブの状態管理
   const [activeTab, setActiveTab] = useState<"skills" | "creations" | "questions">("skills");
@@ -27,10 +28,12 @@ export default function ProfilePage() {
     const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
     const storedBio = localStorage.getItem("user_bio");
     const storedPortfolio = localStorage.getItem("user_portfolio");
+    const storedEmail = localStorage.getItem("user_email");
 
     if (storedName) setUserName(storedName);
     if (storedBio) setBio(storedBio);
     if (storedPortfolio) setPortfolioUrl(storedPortfolio);
+    if (storedEmail) setUserEmail(storedEmail);
     if (storedAvatar) {
       setAvatarUrl(storedAvatar);
       setSelectedIcon(storedAvatar);
@@ -68,11 +71,11 @@ export default function ProfilePage() {
               <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 z-10 shadow-sm bg-white">
                 {selectedIcon ? (
                   <Image
-                  src={selectedIcon}
-                  alt="Profile"
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
+                    src={selectedIcon}
+                    alt="Profile"
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-gray-600 font-bold text-5xl leading-none">
@@ -94,7 +97,7 @@ export default function ProfilePage() {
             <div className="mb-4">
               <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">{userName}</h1>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-gray-500 text-sm">@user_{userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id"}</p>
+                <p className="text-gray-500 text-sm">@{userEmail || `user_${userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id"}`}</p>
                 <div className="flex items-center text-gray-400 text-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
