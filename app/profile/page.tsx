@@ -12,6 +12,7 @@ import {
   getAllProfiles,
   getProfile,
   getProfilePosts,
+  getProfileQuestions,
 } from "@/lib/profileApi";
 
 // API から取得した日時を日本時間の見やすい形式に変換するユーティリティ関数
@@ -23,6 +24,12 @@ const formatDateTime = (value: string) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+const parseTimestamp = (value?: string) => {
+  if (!value) return Number.NEGATIVE_INFINITY;
+  const ts = Date.parse(value);
+  return Number.isNaN(ts) ? Number.NEGATIVE_INFINITY : ts;
+};
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState("ゲストユーザー");
@@ -43,9 +50,14 @@ export default function ProfilePage() {
   const [userPosts, setUserPosts] = useState<Post[]>([]);
 
   useEffect(() => {
+    // 表示名は認証由来の値として backend 有効時でも使う
+    const storedName = localStorage.getItem("user_name");
+    if (storedName) {
+      setUserName(storedName);
+    }
+
     // バックエンド未連携時のみ localStorage から初期値を読み込む
     if (!isUsingBackend()) {
-      const storedName = localStorage.getItem("user_name");
       const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
       const storedBio = localStorage.getItem("user_bio");
       const storedPortfolio = localStorage.getItem("user_portfolio");
@@ -129,24 +141,44 @@ export default function ProfilePage() {
           setSkills(parsedSkills);
         }
 
-        // プロフィール所有者の投稿一覧は専用 API で取得する
-        const profilePosts = await getProfilePosts(profile.id);
-        const mappedPosts: Post[] = profilePosts.map((post) => ({
-          id: post.id,
-          title: post.title,
-          content: post.content,
-          type: "creation",
-          created_at: post.created_at,
-        }));
+        // プロフィール所有者の投稿と質問を並行取得する
+        const [profilePosts, profileQuestions] = await Promise.all([
+          getProfilePosts(profile.id).catch(() => []),
+          getProfileQuestions(profile.id).catch(() => []),
+        ]);
+
+        // 投稿と質問を type フィールドをつけて統合する
+        const mappedPosts: Post[] = [
+          ...profilePosts.map((post) => ({
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            type: "creation" as const,
+            created_at: post.created_at,
+          })),
+          ...profileQuestions.map((q) => ({
+            id: q.id,
+            title: q.title,
+            content: q.content,
+            type: "question" as const,
+            created_at: q.created_at,
+          })),
+        ];
 
         setUserPosts(mappedPosts);
 
-        if (profilePosts.length > 0) {
-          // 更新日時は最新投稿の updated_at を表示用に採用する
-          const latest = [...profilePosts].sort(
-            (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-          )[0];
-          setLastUpdated(formatDateTime(latest.updated_at));
+        // 投稿と質問の両方から有効な日時だけで最新を計算する
+        const allPosts = [...profilePosts, ...profileQuestions];
+        if (allPosts.length > 0) {
+          const latestTs = allPosts.reduce((maxTs, post) => {
+            const updatedTs = parseTimestamp(post.updated_at);
+            const createdTs = parseTimestamp(post.created_at);
+            return Math.max(maxTs, updatedTs, createdTs);
+          }, Number.NEGATIVE_INFINITY);
+
+          if (Number.isFinite(latestTs)) {
+            setLastUpdated(formatDateTime(new Date(latestTs).toISOString()));
+          }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "プロフィール情報の取得に失敗しました";
@@ -162,6 +194,8 @@ export default function ProfilePage() {
 
   const creationPosts = userPosts.filter(post => post.type === 'creation');
   const questionPosts = userPosts.filter(post => post.type === 'question');
+  const storedUserId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const handleId = (storedUserId || userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id").slice(0, 8);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

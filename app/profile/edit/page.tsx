@@ -74,6 +74,9 @@ export default function ProfileEditPage() {
         if (result.user?.id) {
           localStorage.setItem("user_id", result.user.id);
         }
+          if (result.user?.username) {
+            localStorage.setItem("user_name", result.user.username);
+          }
         if (result.profile?.id) {
           localStorage.setItem("profile_id", result.profile.id);
         }

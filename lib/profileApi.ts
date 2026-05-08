@@ -65,8 +65,16 @@ export async function getProfile(profileId: string): Promise<ProfileData> {
   return apiCall<ProfileData>(`/profiles/${encodeURIComponent(profileId)}`, { method: "GET" });
 }
 
+// プロフィール所有者の投稿一覧を取得
 export async function getProfilePosts(profileId: string): Promise<ProfilePostData[]> {
   return apiCall<ProfilePostData[]>(`/profiles/${encodeURIComponent(profileId)}/posts`, {
+    method: "GET",
+  });
+}
+
+// プロフィール所有者の質問一覧を取得
+export async function getProfileQuestions(profileId: string): Promise<ProfilePostData[]> {
+  return apiCall<ProfilePostData[]>(`/profiles/${encodeURIComponent(profileId)}/questions`, {
     method: "GET",
   });
 }
