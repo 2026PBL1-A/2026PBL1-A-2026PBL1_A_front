@@ -14,22 +14,22 @@ export default function CreatePostPage() {
   // const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const formData = new FormData();
+    const formData = new FormData();
 
-  formData.append("title", title);
-  formData.append("content", content);
+    formData.append("title", title);
+    formData.append("content", content);
 
-//   if (image) {
-//     formData.append("image", image);
-//   }
+    //   if (image) {
+    //     formData.append("image", image);
+    //   }
 
-  // ここで送信
-  await fetch("/api/post", {
-    method: "POST",
-    body: formData,
-  });
+    // ここで送信
+    await fetch("/api/post", {
+      method: "POST",
+      body: formData,
+    });
 
     if (!title || !category || !content) {
       alert("すべてのフィールドを入力してください");
@@ -49,7 +49,7 @@ export default function CreatePostPage() {
           },
           body: JSON.stringify({
             title,
-            type: category === "question" ? "question" : "creation",
+            tag: category,
             content,
           }),
         });

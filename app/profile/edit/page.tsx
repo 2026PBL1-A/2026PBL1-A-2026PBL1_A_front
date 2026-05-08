@@ -16,7 +16,6 @@ export default function ProfileEditPage() {
     : null
 );
   const [bio, setBio] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const icons = [
@@ -34,11 +33,9 @@ export default function ProfileEditPage() {
     // 既存のユーザー情報を読み込む
     const storedName = localStorage.getItem("user_name");
     const storedBio = localStorage.getItem("user_bio");
-    const storedPortfolio = localStorage.getItem("user_portfolio");
 
     if (storedName) setUserName(storedName);
     if (storedBio) setBio(storedBio);
-    if (storedPortfolio) setPortfolioUrl(storedPortfolio);
   }, []);
 
   // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +60,6 @@ export default function ProfileEditPage() {
         localStorage.setItem("avatar_url", avatarUrl);
       }
       localStorage.setItem("user_bio", bio);
-      localStorage.setItem("user_portfolio", portfolioUrl);
 
       alert("プロフィールを更新しました");
       router.push("/profile");
@@ -212,7 +208,6 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            
 
             {/* ボタングループ */}
             <div className="pt-6 flex gap-4">
