@@ -31,8 +31,9 @@ export default function CommentSection({
   const label = postType === "question" ? "回答" : "コメント";
   
   // APIエンドポイントの定義
-  const getEndpoint = postType === "question" ? `/answers?question_id=${postId}` : `/comments?post_id=${postId}`;
-  const postEndpoint = postType === "question" ? `/answers` : `/comments`;
+  // 制作物: /comment, 質問: /answer
+  const getEndpoint = postType === "question" ? `/answer?question_id=${postId}` : `/comment?post_id=${postId}`;
+  const postEndpoint = postType === "question" ? `/answer` : `/comment`;
 
   useEffect(() => {
     async function fetchComments() {
