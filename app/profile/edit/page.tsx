@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Menu from "@/app/components/aikon";
 import Image from "next/image";
+import { isUsingBackend } from "@/lib/api";
+import { updateProfile } from "@/lib/profileApi";
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -49,12 +51,35 @@ export default function ProfileEditPage() {
   //   }
   // };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      // localStorage に保存（本来はバックエンドAPIへ送信）
+      if (isUsingBackend()) {
+        // API 経由でプロフィールを更新する
+        const payload: { username?: string; bio?: string } = {};
+
+        // username は空文字を送らず、入力があるときだけ更新する
+        if (userName.trim()) {
+          payload.username = userName.trim();
+        }
+        // 自己紹介は空でも送って、画面表示と保存内容を揃える
+        payload.bio = bio;
+
+        // API でプロフィールを更新して返ってきた内容をローカルに保存する
+        const result = await updateProfile(payload);
+
+        // 以後のプロフィール取得に使うため、返却された ID を保存する
+        if (result.user?.id) {
+          localStorage.setItem("user_id", result.user.id);
+        }
+        if (result.profile?.id) {
+          localStorage.setItem("profile_id", result.profile.id);
+        }
+      }
+
+      // localStorage も更新して既存画面の表示を即時反映
       localStorage.setItem("user_name", userName);
       if (avatarUrl) {
         localStorage.setItem("avatar_url", avatarUrl);

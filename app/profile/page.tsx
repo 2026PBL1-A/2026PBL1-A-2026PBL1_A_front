@@ -6,6 +6,23 @@ import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
 import Image from "next/image";
 import { formatDate } from "@/lib/formatDate";
+import { isUsingBackend } from "@/lib/api";
+import {
+  createProfile,
+  getAllProfiles,
+  getProfile,
+  getProfilePosts,
+} from "@/lib/profileApi";
+
+// API から取得した日時を日本時間の見やすい形式に変換するユーティリティ関数
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState("ゲストユーザー");
@@ -15,6 +32,9 @@ export default function ProfilePage() {
   const [lastUpdated, setLastUpdated] = useState("2026/05/01 14:40"); // 仮の更新日時
   const [selectedIcon, setSelectedIcon] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [skills, setSkills] = useState<string[]>(["JavaScript", "React", "Next.js", "TypeScript", "Tailwind CSS", "Node.js"]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // タブの状態管理
   const [activeTab, setActiveTab] = useState<"skills" | "creations" | "questions">("skills");
@@ -23,23 +43,121 @@ export default function ProfilePage() {
   const [userPosts, setUserPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    // ユーザー情報の取得
-    const storedName = localStorage.getItem("user_name");
-    const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
-    const storedBio = localStorage.getItem("user_bio");
-    const storedPortfolio = localStorage.getItem("user_portfolio");
-    const storedEmail = localStorage.getItem("user_email");
-
-    if (storedName) setUserName(storedName);
-    if (storedBio) setBio(storedBio);
-    if (storedPortfolio) setPortfolioUrl(storedPortfolio);
-    if (storedEmail) setUserEmail(storedEmail);
-    if (storedAvatar) {
-      setAvatarUrl(storedAvatar);
-      setSelectedIcon(storedAvatar);
+    // バックエンド未連携時のみ localStorage から初期値を読み込む
+    if (!isUsingBackend()) {
+      const storedName = localStorage.getItem("user_name");
+      const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
+      const storedBio = localStorage.getItem("user_bio");
+      const storedPortfolio = localStorage.getItem("user_portfolio");
+      const storedEmail = localStorage.getItem("user_email");
+      
+      if (storedName) setUserName(storedName);
+      if (storedBio) setBio(storedBio);
+      if (storedPortfolio) setPortfolioUrl(storedPortfolio);
+      if (storedEmail) setUserEmail(storedEmail);
+      if (storedAvatar) {
+        setAvatarUrl(storedAvatar);
+        setSelectedIcon(storedAvatar);
+      }
     }
-    // 擬似的にこのユーザーの投稿としてダミーデータをセット
-    setUserPosts(dummyPosts);
+    
+    const fetchProfileAndPosts = async () => {
+      if (!isUsingBackend()) {
+        // バックエンド未使用時はこれまで通りローカルのダミーデータを利用
+        setUserPosts(dummyPosts);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // API からプロフィールと投稿を取得するロジック
+        const token = localStorage.getItem("access_token");
+        const storedUserId = localStorage.getItem("user_id");
+        const storedProfileId = localStorage.getItem("profile_id");
+
+        // ID でプロフィールを取得
+        let profile: Awaited<ReturnType<typeof getProfile>> | null = null;
+
+        // まず保存済み profile_id があればそれを優先して詳細を引く
+        if (storedProfileId) {
+          try {
+            profile = await getProfile(storedProfileId);
+          } catch {
+            profile = null;
+          }
+        }
+
+        // profile_id がない場合は一覧から user_id に一致するプロフィールを探す
+        if (!profile) {
+          const profiles = await getAllProfiles();
+          if (storedUserId) {
+            profile = profiles.find((p) => p.user_id === storedUserId) ?? null;
+          } else if (profiles.length === 1) {
+            // user_id 未保存時の最小フォールバック（単一プロフィール環境）
+            profile = profiles[0];
+          }
+        }
+
+        if (!profile && token && storedUserId) {
+          // バックエンド連携時は localStorage から読まないため、空初期値で作成
+          profile = await createProfile({ bio: "", tag: "" });
+        }
+
+        if (!profile) {
+          setUserPosts([]);
+          return;
+        }
+
+        // 次回以降の取得を安定させるため、判明した ID を保存し直す
+        localStorage.setItem("profile_id", profile.id);
+        if (profile.user_id) {
+          localStorage.setItem("user_id", profile.user_id);
+        }
+
+        if (profile.bio && profile.bio.trim()) {
+          setBio(profile.bio);
+          localStorage.setItem("user_bio", profile.bio);
+        }
+
+        const parsedSkills = (profile.tag || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (parsedSkills.length > 0) {
+          setSkills(parsedSkills);
+        }
+
+        // プロフィール所有者の投稿一覧は専用 API で取得する
+        const profilePosts = await getProfilePosts(profile.id);
+        const mappedPosts: Post[] = profilePosts.map((post) => ({
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          type: "creation",
+          created_at: post.created_at,
+        }));
+
+        setUserPosts(mappedPosts);
+
+        if (profilePosts.length > 0) {
+          // 更新日時は最新投稿の updated_at を表示用に採用する
+          const latest = [...profilePosts].sort(
+            (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          )[0];
+          setLastUpdated(formatDateTime(latest.updated_at));
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "プロフィール情報の取得に失敗しました";
+        setError(message);
+        setUserPosts(dummyPosts);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileAndPosts();
   }, []);
 
   const creationPosts = userPosts.filter(post => post.type === 'creation');
@@ -149,12 +267,21 @@ export default function ProfilePage() {
 
           {/* タブコンテンツエリア */}
           <div className="bg-gray-50 min-h-[400px]">
+            {error && (
+              <div className="mx-6 mt-6 p-3 bg-yellow-100 text-yellow-800 rounded">
+                ⚠️ {error} (ダミーデータを表示しています)
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="px-6 pt-6 text-gray-500 font-medium">読み込み中...</div>
+            )}
+
             {activeTab === "skills" && (
               <div className="p-6">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">習得技術スタック</h2>
                 <div className="flex flex-wrap gap-2">
-                  {/* ダミーのスキルタグ */}
-                  {["JavaScript", "React", "Next.js", "TypeScript", "Tailwind CSS", "Node.js"].map((skill) => (
+                  {skills.map((skill) => (
                     <span key={skill} className="px-4 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-bold shadow-sm">
                       {skill}
                     </span>

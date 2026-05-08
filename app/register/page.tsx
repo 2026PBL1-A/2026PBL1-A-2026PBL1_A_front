@@ -90,8 +90,20 @@ export default function RegisterPage() {
               ? loginData.user.name
               : name;
 
+      // 受け取ったユーザーIDを可能なキーから取得して保存
+      const receivedUserId =
+        typeof loginData?.user?.id === "string"
+          ? loginData.user.id
+          : typeof loginData?.id === "string"
+            ? loginData.id
+            : "";
+
       localStorage.setItem("access_token", loginData.access_token);
       localStorage.setItem("user_name", receivedUserName);
+      // ログイン後にプロフィール画面へつなぐため、取得できた場合だけ user_id を保存する
+      if (receivedUserId) {
+        localStorage.setItem("user_id", receivedUserId);
+      }
 
       setPopup({ message: "登録とログインに成功しました", type: "success" });
       setTimeout(() => {

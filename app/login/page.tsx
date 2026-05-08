@@ -56,10 +56,23 @@ export default function LoginPage() {
                 ? data.user.name
                 : "";
 
+        // 受け取ったユーザーIDを可能なキーから取得して保存
+        const receivedUserId =
+          typeof data?.user?.id === "string"
+            ? data.user.id
+            : typeof data?.id === "string"
+              ? data.id
+              : "";
+
         // 以降の認証付きAPI呼び出しに使う token をブラウザへ保存
         localStorage.setItem("access_token", data.access_token);
         if (receivedUserName) {
           localStorage.setItem("user_name", receivedUserName);
+        }
+
+        // プロフィール詳細/投稿一覧の取得用の user_id も保持する
+        if (receivedUserId) {
+          localStorage.setItem("user_id", receivedUserId);
         }
 
         // DevTools でログイン成功地点を確認するためのログ
