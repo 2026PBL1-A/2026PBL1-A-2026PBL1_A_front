@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
+import { formatDate } from "@/lib/formatDate";
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState("ゲストユーザー");
@@ -98,17 +99,6 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            {/* リンクなど付帯情報 */}
-            {portfolioUrl && (
-              <div className="flex items-center text-blue-500 mb-4 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                  {portfolioUrl.replace(/^https?:\/\//, '')}
-                </a>
-              </div>
-            )}
           </div>
 
           {/* タブナビゲーション */}
@@ -188,7 +178,7 @@ export default function ProfilePage() {
                         <div className="p-5 flex flex-col flex-grow">
                           {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
+                              {formatDate(post.created_at)}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -240,7 +230,7 @@ export default function ProfilePage() {
                         <div className="p-5 flex flex-col flex-grow">
                           {post.created_at && (
                             <div className="text-xs text-gray-500 mb-2 font-medium">
-                              {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
+                              {formatDate(post.created_at)}
                             </div>
                           )}
                           <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">

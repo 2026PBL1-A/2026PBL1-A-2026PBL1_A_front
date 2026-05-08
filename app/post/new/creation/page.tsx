@@ -20,7 +20,6 @@ export default function CreateCreationPage() {
     formData.append("title", title);
     formData.append("content", content);
     formData.append("tag", category);
-    formData.append("type", "creation"); // 制作物固定
 
     // if (image) {
     //   formData.append("image", image);

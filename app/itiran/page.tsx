@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { dummyPosts, Post } from "@/app/data/dummyPosts";
 import { isUsingBackend } from "@/lib/api";
+import { parseDateString, formatDate } from "@/lib/formatDate";
 
 export default function Page() {
   const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
@@ -87,8 +88,8 @@ export default function Page() {
 
   // 投稿を新しい順にソート
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
+    const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
     return dateB - dateA;
   });
 

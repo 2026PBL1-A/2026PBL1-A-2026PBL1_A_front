@@ -20,7 +20,6 @@ export default function CreateQuestionPage() {
     formData.append("title", title);
     formData.append("content", content);
     formData.append("tag", category);
-    formData.append("type", "question"); // 質問固定
 
     // if (image) {
     //   formData.append("image", image);
@@ -43,7 +42,6 @@ export default function CreateQuestionPage() {
           },
           body: JSON.stringify({
             title,
-            type: "question",
             tag: category,
             content,
           }),

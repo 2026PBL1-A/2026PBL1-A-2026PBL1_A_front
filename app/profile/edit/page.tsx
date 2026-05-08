@@ -11,7 +11,6 @@ export default function ProfileEditPage() {
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bio, setBio] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -19,12 +18,10 @@ export default function ProfileEditPage() {
     const storedName = localStorage.getItem("user_name");
     const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
     const storedBio = localStorage.getItem("user_bio");
-    const storedPortfolio = localStorage.getItem("user_portfolio");
 
     if (storedName) setUserName(storedName);
     if (storedAvatar) setAvatarUrl(storedAvatar);
     if (storedBio) setBio(storedBio);
-    if (storedPortfolio) setPortfolioUrl(storedPortfolio);
   }, []);
 
   // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +46,6 @@ export default function ProfileEditPage() {
         localStorage.setItem("avatar_url", avatarUrl);
       }
       localStorage.setItem("user_bio", bio);
-      localStorage.setItem("user_portfolio", portfolioUrl);
 
       alert("プロフィールを更新しました");
       router.push("/profile");
@@ -141,19 +137,6 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {/* 制作物URL */}
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                制作物のURL (ポートフォリオ、GitHubなど)
-              </label>
-              <input
-                type="url"
-                className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition"
-                placeholder="https://example.com"
-                value={portfolioUrl}
-                onChange={(e) => setPortfolioUrl(e.target.value)}
-              />
-            </div>
 
             {/* ボタングループ */}
             <div className="pt-6 flex gap-4">
