@@ -9,7 +9,8 @@ export type CommentData = {
   comment?: string;
   answer?: string;
   created_at: string;
-  user_id?: string | number;
+  user_id?: any;
+  userid?: any;
   username?: string;
 };
 
@@ -89,9 +90,29 @@ export default function CommentSection({
     setSubmitting(true);
     setError(null);
     try {
+      // JWTトークンからユーザーIDを取り出す処理
+      let currentUserId = "1"; // デフォルト
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(window.atob(base64));
+            // NestJSの一般的なJWT payload (sub または id)
+            currentUserId = payload.sub || payload.id || payload.userId || "1";
+          } catch (e) {
+            console.error("Token decode error:", e);
+          }
+        }
+      }
+
+      // バックエンドのDTO（CreateAnswerDto / CreateCommentDto）に合わせてプロパティ名を変更
+      // content -> comment
+      // question_id -> questionid, post_id -> postid
       const payload = postType === "question" 
-        ? { question_id: postId, content: inputText }
-        : { post_id: postId, content: inputText };
+        ? { questionid: postId, comment: inputText, userid: currentUserId }
+        : { postid: postId, comment: inputText, userid: currentUserId };
         
       const response = await fetchWithAuth(postEndpoint, {
         method: "POST",
@@ -100,7 +121,16 @@ export default function CommentSection({
 
       if (response.ok) {
         const data = await response.json();
-        const savedComment = data.comment || data.answer || data;
+        
+        // 保存したコメントをそのままオブジェクトとして取得
+        const savedComment = data;
+        
+        // 投稿直後はバックエンドからの返り値にユーザー名が含まれないことがあるため、
+        // ログイン中のユーザー名を補完する
+        if (!savedComment.username && !savedComment.userid?.username && typeof window !== "undefined") {
+          savedComment.username = localStorage.getItem("user_name") || "あなた";
+        }
+
         setComments([...comments, savedComment]);
         setInputText("");
         setShowComment(false);
@@ -122,6 +152,14 @@ export default function CommentSection({
     return c.content || c.comment || c.answer || "";
   };
 
+  // ユーザー名を取得するヘルパー関数
+  const getUsername = (c: CommentData) => {
+    if (c.username) return c.username;
+    if (c.userid && c.userid.username) return c.userid.username;
+    if (c.user_id && c.user_id.username) return c.user_id.username;
+    return "名無しユーザー";
+  };
+
   return (
     <div className="mt-8 pt-4">
       {/* 既存のコメント/回答一覧 */}
@@ -137,14 +175,14 @@ export default function CommentSection({
           <div className="text-gray-500 py-4 animate-pulse text-sm">読み込み中...</div>
         ) : comments.length > 0 ? (
           <ul className="space-y-4">
-            {comments.map((c) => (
-              <li key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+            {comments.map((c, index) => (
+              <li key={c.id || index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-bold text-gray-800 flex items-center">
                     <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100">
-                      {(c.username || "名")[0]}
+                      {getUsername(c)[0]}
                     </div>
-                    {c.username || "名無しユーザー"}
+                    {getUsername(c)}
                   </div>
                   <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
                 </div>
