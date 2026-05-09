@@ -56,21 +56,24 @@ export default function ProfilePage() {
       setUserName(storedName);
     }
 
-    // バックエンド未連携時のみ localStorage から初期値を読み込む
+    // アイコンだけはローカル優先で扱う（バックエンド使用時も localStorage を参照）
+    // 後日バックエンドと連携予定: アイコンをサーバー保存に移行する予定のため、
+    // 当面はローカルに保持して画面で即時反映する実装にしています。
+    const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
+    if (storedAvatar) {
+      setAvatarUrl(storedAvatar);
+      setSelectedIcon(storedAvatar);
+    }
+
+    // バックエンド未連携時はその他の値を localStorage から読み込む
     if (!isUsingBackend()) {
-      const storedAvatar = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon");
       const storedBio = localStorage.getItem("user_bio");
       const storedPortfolio = localStorage.getItem("user_portfolio");
       const storedEmail = localStorage.getItem("user_email");
       
-      if (storedName) setUserName(storedName);
       if (storedBio) setBio(storedBio);
       if (storedPortfolio) setPortfolioUrl(storedPortfolio);
       if (storedEmail) setUserEmail(storedEmail);
-      if (storedAvatar) {
-        setAvatarUrl(storedAvatar);
-        setSelectedIcon(storedAvatar);
-      }
     }
     
     const fetchProfileAndPosts = async () => {
