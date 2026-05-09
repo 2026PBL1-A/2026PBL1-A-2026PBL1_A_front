@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Menu() {
   const [open, setOpen] = useState(false);
@@ -9,6 +10,7 @@ export default function Menu() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const router = useRouter();
+  const { logout } = useAuth();
 
   useEffect(() => {
     // 他の機能で保存されたプロフィールアイコンがある場合は取得する
@@ -84,7 +86,13 @@ export default function Menu() {
 
               {/* ログアウト */}
               <button
-                onClick={() => router.push("/login")}
+                onClick={() => {
+                  logout();
+                  setShowModal(false);
+                  setAvatarUrl(null);
+                  setUserName(null);
+                  router.push("/login");
+                }}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
               >
                 ログアウト

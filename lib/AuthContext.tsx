@@ -39,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = () => {
-    // 明示ログアウト時は保存値とメモリ上の状態を両方クリア
-    localStorage.removeItem("access_token");
+    // 明示ログアウト時は localStorage 全体をクリア
+    // （ユーザー情報、プロフィール、トークン等を完全に削除）
+    localStorage.clear();
     setToken(null);
   };
 
