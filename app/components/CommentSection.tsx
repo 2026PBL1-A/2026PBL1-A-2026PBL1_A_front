@@ -32,10 +32,11 @@ export default function CommentSection({
 
   // 属性が質問の場合は「回答」、それ以外は「コメント」
   const label = postType === "question" ? "回答" : "コメント";
+  const targetId = questionId ?? postId;
   
   // APIエンドポイントの定義
   // 制作物: /comment, 質問: /answer
-  const getEndpoint = postType === "question" ? `/answer/question/${questionId}` : `/comment/post/${postId}`;
+  const getEndpoint = postType === "question" ? `/answer/question/${targetId}` : `/comment/post/${targetId}`;
   const postEndpoint = postType === "question" ? `/answer` : `/comment`;
 
   useEffect(() => {
