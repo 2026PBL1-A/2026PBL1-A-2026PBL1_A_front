@@ -16,10 +16,12 @@ export type CommentData = {
 
 export default function CommentSection({ 
   postType,
-  postId
+  postId,
+  questionId
 }: { 
   postType: "creation" | "question";
   postId: string;
+  questionId?: string;
 }) {
   const [showComment, setShowComment] = useState(false);
   const [inputText, setInputText] = useState("");
@@ -33,7 +35,7 @@ export default function CommentSection({
   
   // APIエンドポイントの定義
   // 制作物: /comment, 質問: /answer
-  const getEndpoint = postType === "question" ? `/answer?question_id=${postId}` : `/comment?post_id=${postId}`;
+  const getEndpoint = postType === "question" ? `/answer/question/${questionId}` : `/comment/post/${postId}`;
   const postEndpoint = postType === "question" ? `/answer` : `/comment`;
 
   useEffect(() => {
@@ -110,9 +112,17 @@ export default function CommentSection({
       // バックエンドのDTO（CreateAnswerDto / CreateCommentDto）に合わせてプロパティ名を変更
       // content -> comment
       // question_id -> questionid, post_id -> postid
-      const payload = postType === "question" 
-        ? { questionid: postId, comment: inputText, userid: currentUserId }
-        : { postid: postId, comment: inputText, userid: currentUserId };
+      const payload = 
+      postType === "question" 
+        ? { 
+          questionId: questionId ?? postId, 
+          comment: inputText, 
+          userId: currentUserId }
+        : { 
+          postId: postId, 
+          comment: inputText, 
+          userId: currentUserId 
+        };
         
       const response = await fetchWithAuth(postEndpoint, {
         method: "POST",
