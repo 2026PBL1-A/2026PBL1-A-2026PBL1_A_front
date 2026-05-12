@@ -5,7 +5,11 @@ export type Post = {
   imageUrl?: string;
   type: "creation" | "question"; // 制作物か質問か
   created_at?: string; // 投稿日時
+<<<<<<< HEAD
   likes?: number; // 評価数（いいねなど）
+=======
+  tags: string[]; // タグ
+>>>>>>> origin/feature/okada_#11
 };
 
 export const dummyPosts: Post[] = [
@@ -16,6 +20,7 @@ export const dummyPosts: Post[] = [
     type: "creation",
     created_at: "2026-04-20T10:00:00Z",
     likes: 12,
+    tags: ["React", "Next.js", "初心者"],
   },
   {
     id: "2",
@@ -24,6 +29,7 @@ export const dummyPosts: Post[] = [
     type: "question",
     created_at: "2026-04-25T14:30:00Z",
     likes: 3,
+    tags: ["Next.js", "エラー", "質問"],
   },
   {
     id: "3",
@@ -32,6 +38,7 @@ export const dummyPosts: Post[] = [
     type: "creation",
     created_at: "2026-04-28T09:15:00Z",
     likes: 25,
+    tags: ["デザイン", "Tailwind CSS", "UI"],
   },
   {
     id: "4",
@@ -40,5 +47,6 @@ export const dummyPosts: Post[] = [
     type: "creation",
     created_at: "2026-04-29T18:45:00Z",
     likes: 42,
+    tags: ["開発", "バグ修正", "リファクタリング"],
   },
 ];
