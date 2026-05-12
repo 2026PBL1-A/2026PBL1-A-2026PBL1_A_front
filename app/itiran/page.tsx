@@ -13,6 +13,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "creation" | "question">("all");
+  const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
 
   useEffect(() => {
     // ユーザー名を取得
@@ -86,11 +87,24 @@ export default function Page() {
     return post.type === filterType;
   });
 
-  // 投稿を新しい順にソート
+  // 投稿をソート
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
-    const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
-    return dateB - dateA;
+    if (sortType === "newest") {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
+      const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
+      return dateB - dateA;
+    } else {
+      // 評価順 (likes が多い順)
+      const likesA = a.likes ?? 0;
+      const likesB = b.likes ?? 0;
+      if (likesA !== likesB) {
+        return likesB - likesA;
+      }
+      // いいねが同じ場合は新しい順
+      const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
+      const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
+      return dateB - dateA;
+    }
   });
 
   return (
@@ -130,6 +144,30 @@ export default function Page() {
           </button>
         </div>
 
+        {/* ソートボタン */}
+        <div className="flex gap-4 mb-6 text-sm">
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="radio"
+              name="sortOrder"
+              checked={sortType === "newest"}
+              onChange={() => setSortType("newest")}
+              className="accent-blue-600"
+            />
+            <span className={sortType === "newest" ? "font-bold text-gray-800" : "text-gray-600"}>新着順</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="radio"
+              name="sortOrder"
+              checked={sortType === "evaluation"}
+              onChange={() => setSortType("evaluation")}
+              className="accent-blue-600"
+            />
+            <span className={sortType === "evaluation" ? "font-bold text-gray-800" : "text-gray-600"}>評価順</span>
+          </label>
+        </div>
+
         {error && (
           <div className="p-3 mb-6 bg-yellow-100 text-yellow-800 rounded">
             ⚠️ {error} (ダミーデータを表示しています)
@@ -149,12 +187,20 @@ export default function Page() {
                   <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.type === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
                     {post.type === 'creation' ? '制作物' : '質問'}
                   </span>
-                  {/* 日付 */}
-                  {post.created_at && (
-                    <div className="text-xs text-gray-500 font-medium">
-                      {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
-                    </div>
-                  )}
+                  {/* 日付と評価 */}
+                  <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                    {post.type === 'creation' && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
+                        {post.likes ?? 0}
+                      </span>
+                    )}
+                    {post.created_at && (
+                      <span>
+                        {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
                   {post.title}
