@@ -13,6 +13,10 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "creation" | "question">("all");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagSearch, setTagSearch] = useState("");
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [tempSelectedTags, setTempSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
     // ユーザー名を取得
@@ -80,11 +84,34 @@ export default function Page() {
     fetchPosts();
   }, []);
 
+  // タグの選択・解除関数
+      const toggleTag = (tag: string) => {
+        setTempSelectedTags((prev) =>
+          prev.includes(tag)
+            ? prev.filter((t) => t !== tag)
+            : [...prev, tag]
+        );
+      };
+
+  // タグ検索
+  const handleTagSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagSearch(e.target.value);
+  };
+
   // フィルタリング
   const filteredPosts = posts.filter((post) => {
-    if (filterType === "all") return true;
-    return post.type === filterType;
-  });
+  const typeMatch =
+    filterType === "all" ||
+    post.type === filterType;
+
+  const tagMatch =
+  selectedTags.length === 0 ||
+  selectedTags.every((tag) =>
+    post.tags.includes(tag)
+  );
+
+  return typeMatch && tagMatch;
+});
 
   // 投稿を新しい順にソート
   const sortedPosts = [...filteredPosts].sort((a, b) => {
@@ -106,29 +133,82 @@ export default function Page() {
       <div className="mt-16 px-4 pb-20 max-w-4xl mx-auto">
 
         {/* フィルタボタン */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setFilterType("all")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "all" ? "bg-gray-800 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            全部表示
-          </button>
-          <button
-            onClick={() => setFilterType("creation")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "creation" ? "bg-blue-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            制作物を表示
-          </button>
-          <button
-            onClick={() => setFilterType("question")}
-            className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "question" ? "bg-orange-500 text-white border-transparent" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-          >
-            質問を表示
-          </button>
-        </div>
+        {/* 上部操作エリア */}
+          <div className="flex items-center justify-between mb-6">
+
+            {/* 左：タグ検索 */}
+            <button
+              onClick={() => {
+                setTempSelectedTags(selectedTags);
+                setIsTagModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200"
+            >
+              {/* 虫眼鏡 */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-gray-500 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+
+              <span className="font-medium text-gray-700 whitespace-nowrap">
+                タグ検索
+              </span>
+
+              {selectedTags.length > 0 && (
+                <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                  {selectedTags.length}
+                </span>
+              )}
+            </button>
+
+            {/* 右：フィルタボタン */}
+            <div className="flex gap-2">
+              
+              <button
+                onClick={() => setFilterType("all")}
+                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+                  filterType === "all"
+                    ? "bg-gray-800 text-white"
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                全部表示
+              </button>
+
+              <button
+                onClick={() => setFilterType("creation")}
+                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+                  filterType === "creation"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                制作物
+              </button>
+
+              <button
+                onClick={() => setFilterType("question")}
+                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
+                  filterType === "question"
+                    ? "bg-orange-500 text-white"
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                質問
+              </button>
+
+            </div>
+</div>
 
         {error && (
           <div className="p-3 mb-6 bg-yellow-100 text-yellow-800 rounded">
@@ -162,6 +242,17 @@ export default function Page() {
                 <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
                   {post.content}
                 </p>
+                {/* タグ一覧 */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {post.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
 
                 {/* 続きを読む要素 */}
                 <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -194,7 +285,107 @@ export default function Page() {
         </Link>
       </div>
 
+      {/* タグモーダル*/}
+      {isTagModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          
+          <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
+            
+            {/* ヘッダー */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">
+                タグ検索
+              </h2>
 
-    </div>
+            </div>
+
+            {/* 検索input */}
+            <input
+              type="text"
+              placeholder="タグを検索"
+              value={tagSearch}
+              onChange={(e) => setTagSearch(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg mb-4"
+            />
+
+            {/* 選択中タグ */}
+            <div className="flex items-center justify-between mb-4">
+              
+              <div className="flex gap-2 flex-wrap">
+                {tempSelectedTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
+                  >
+                    #{tag}
+                    <span className="text-xs">×</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setTempSelectedTags([])}
+                className="ml-4 shrink-0 px-3 py-1 bg-gray-200 rounded-full text-sm"
+              >
+                クリア
+              </button>
+            </div>
+
+            {/* タグ候補 */}
+                <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
+                  {Object.entries(
+                    posts.flatMap((post) => post.tags).reduce(
+                      (acc, tag) => {
+                        acc[tag] = (acc[tag] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>
+                    )
+                  )
+                    .sort((a, b) => b[1] - a[1])
+                    .filter(([tag]) =>
+                      tag.toLowerCase().includes(tagSearch.toLowerCase())
+                    )
+                    .slice(0, 10)
+                    .map(([tag, count]) => (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className={`px-3 py-1 rounded-full text-sm transition ${
+                          tempSelectedTags.includes(tag)
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-100 hover:bg-gray-200"
+                        }`}
+                      >
+                        #{tag} ({count})
+                      </button>
+                    ))}
+                </div>
+
+                {/* ボタンエリア */}
+                <div className="flex justify-end gap-3">
+                  
+                  <button
+                    onClick={() => setIsTagModalOpen(false)}
+                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    キャンセル
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedTags(tempSelectedTags);
+                      setIsTagModalOpen(false);
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                  >
+                    決定
+                  </button>
+                </div>
+              </div>
+            </div>
+      )}
+      </div>
   );
 }
