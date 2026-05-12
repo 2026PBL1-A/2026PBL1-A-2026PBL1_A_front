@@ -67,6 +67,33 @@ export async function updateProfile(payload: UpdateProfileRequest): Promise<Upda
   });
 }
 
+export interface UpdatePasswordRequest {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
+export async function updatePassword(payload: UpdatePasswordRequest): Promise<void> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch("/api/profiles/password", {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    // 401エラー（現在のパスワード間違い）の場合でもログアウトさせず、エラーとして投げる
+    throw new Error(errorData.message || "現在のパスワードが間違っています");
+  }
+}
+
 export async function getAllProfiles(): Promise<ProfileResponse[]> {
   return apiCall<ProfileResponse[]>("/profiles", { method: "GET" });
 }
