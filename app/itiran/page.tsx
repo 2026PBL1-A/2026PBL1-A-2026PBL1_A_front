@@ -108,7 +108,7 @@ export default function Page() {
   const tagMatch =
   selectedTags.length === 0 ||
   selectedTags.every((tag) =>
-    post.tags.includes(tag)
+    post.tags?.includes(tag) ?? false
   );
 
   return typeMatch && tagMatch;
@@ -290,7 +290,7 @@ export default function Page() {
                 </p>
                 {/* タグ一覧 */}
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {post.tags.map((tag) => (
+                  {post.tags?.map((tag) => (
                     <span
                       key={tag}
                       className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
@@ -381,7 +381,7 @@ export default function Page() {
             {/* タグ候補 */}
                 <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
                   {Object.entries(
-                    posts.flatMap((post) => post.tags).reduce(
+                    posts.flatMap((post) => post.tags || []).reduce(
                       (acc, tag) => {
                         acc[tag] = (acc[tag] || 0) + 1;
                         return acc;

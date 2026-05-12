@@ -5,11 +5,8 @@ export type Post = {
   imageUrl?: string;
   type: "creation" | "question"; // 制作物か質問か
   created_at?: string; // 投稿日時
-<<<<<<< HEAD
   likes?: number; // 評価数（いいねなど）
-=======
-  tags: string[]; // タグ
->>>>>>> origin/feature/okada_#11
+  tags?: string[]; // タグ
 };
 
 export const dummyPosts: Post[] = [
