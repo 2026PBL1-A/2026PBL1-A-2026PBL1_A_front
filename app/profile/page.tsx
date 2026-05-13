@@ -127,7 +127,7 @@ export default function ProfilePage() {
 
         if (!profileResp && token && storedUserId) {
           // バックエンド連携時は localStorage から読まないため、空初期値で作成
-          const created = await createProfile({ bio: "", tag: "" });
+          const created = await createProfile({ bio: "" });
           profileResp = { profile: created, user: null } as any;
         }
 
@@ -151,17 +151,20 @@ export default function ProfilePage() {
           localStorage.setItem("user_email", profileResp.user.email);
         }
 
-        if (profileResp.profile.bio && profileResp.profile.bio.trim()) {
+        if (profileResp.profile.bio !== undefined) {
           setBio(profileResp.profile.bio);
           localStorage.setItem("user_bio", profileResp.profile.bio);
         }
 
-        const parsedSkills = (profileResp.profile.tag || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        const parsedSkills = (profileResp.profile.profileTags || [])
+          .map((profileTag) => profileTag.tag?.tag)
+          .filter((skill): skill is string => Boolean(skill && skill.trim()));
         if (parsedSkills.length > 0) {
           setSkills(parsedSkills);
+          localStorage.setItem("user_skills", JSON.stringify(parsedSkills));
+        } else {
+          setSkills([]);
+          localStorage.removeItem("user_skills");
         }
 
         // プロフィール所有者の投稿と質問を並行取得する

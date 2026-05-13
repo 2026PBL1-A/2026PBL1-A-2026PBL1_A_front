@@ -2,14 +2,26 @@ import { apiCall } from "@/lib/api";
 
 export interface CreateProfileRequest {
   bio?: string;
-  tag?: string;
+}
+
+// タグデータの型定義
+export interface TagData {
+  id: string;
+  tag: string;
+}
+
+// プロフィールとタグの関連を表す型定義
+export interface ProfileTagData {
+  profile_id: string;
+  tag_id: string;
+  tag: TagData;
 }
 
 export interface ProfileData {
   id: string;
   user_id: string;
   bio?: string;
-  tag?: string;
+  profileTags?: ProfileTagData[];
   avatarUrl?: string;
 }
 
@@ -27,6 +39,7 @@ export interface ProfileResponse {
 export interface UpdateProfileRequest {
   username?: string;
   bio?: string;
+  tag_ids?: string[];
 }
 
 export interface UpdateProfileResponse {
@@ -38,7 +51,7 @@ export interface UpdateProfileResponse {
     id: string;
     user_id: string;
     bio?: string;
-    tag?: string;
+    profileTags?: ProfileTagData[];
     avatarUrl?: string;
   };
 }
@@ -67,12 +80,18 @@ export async function updateProfile(payload: UpdateProfileRequest): Promise<Upda
   });
 }
 
+// プロフィールの一覧を取得する API 呼び出し関数
+export interface CreateTagRequest {
+  tag: string;
+}
+
 export interface UpdatePasswordRequest {
   currentPassword?: string;
   newPassword?: string;
   confirmPassword?: string;
 }
 
+// パスワード更新 API 呼び出し関数
 export async function updatePassword(payload: UpdatePasswordRequest): Promise<void> {
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const headers = new Headers();
@@ -81,12 +100,14 @@ export async function updatePassword(payload: UpdatePasswordRequest): Promise<vo
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // バックエンドのパスワード更新 API を呼び出す
   const response = await fetch("/api/profiles/password", {
     method: "PATCH",
     headers,
     body: JSON.stringify(payload),
   });
 
+  // 4xx/5xx は成功レスポンスではないのでエラーハンドリングへ移す
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     // 401エラー（現在のパスワード間違い）の場合でもログアウトさせず、エラーとして投げる
@@ -94,8 +115,22 @@ export async function updatePassword(payload: UpdatePasswordRequest): Promise<vo
   }
 }
 
+// プロフィールの一覧を取得する API 呼び出し関数
 export async function getAllProfiles(): Promise<ProfileResponse[]> {
   return apiCall<ProfileResponse[]>("/profiles", { method: "GET" });
+}
+
+// タグの一覧を取得する API 呼び出し関数
+export async function getAllTags(): Promise<TagData[]> {
+  return apiCall<TagData[]>("/tags", { method: "GET" });
+}
+
+// タグを新規作成する API 呼び出し関数
+export async function createTag(payload: CreateTagRequest): Promise<TagData> {
+  return apiCall<TagData>("/tags", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // profileId を基点に詳細と所有投稿を取得する

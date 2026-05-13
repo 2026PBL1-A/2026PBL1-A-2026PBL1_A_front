@@ -6,7 +6,12 @@ import Link from "next/link";
 import Menu from "@/app/components/aikon";
 import Image from "next/image";
 import { isUsingBackend } from "@/lib/api";
-import { updateProfile, updatePassword } from "@/lib/profileApi";
+import {
+  getAllTags,
+  createTag,
+  updatePassword,
+  updateProfile,
+} from "@/lib/profileApi";
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -17,29 +22,15 @@ export default function ProfileEditPage() {
     ? localStorage.getItem("avatar_url")
     : null
 );
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState<string | null>("");
   const [isSaving, setIsSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  
   // 技術スタック選択用のステート
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customSkill, setCustomSkill] = useState("");
-
-  // パスワード変更モーダル用のステート
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const icons = [
-  "/icons/さくらんぼアイコン.png",
-  "/icons/チューリップアイコン.png",
-  "/icons/幾何学図形アイコン.png",
-  "/icons/魚アイコン.png",
-  "/icons/犬アイコン.png",
-  "/icons/人食いザメアイコン.png",
-  "/icons/闘牛アイコン.png",
-  "/icons/狼アイコン.png",
-  ];
   const techStacks = [
     "React",
     "Next.js",
@@ -57,7 +48,26 @@ export default function ProfileEditPage() {
     "TailwindCSS",
     "Figma",
   ];
+  const skillCandidates = isUsingBackend()
+    ? availableTags.map((tag) => tag.tag)
+    : techStacks;
 
+  // パスワード変更モーダル用のステート
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const icons = [
+  "/icons/さくらんぼアイコン.png",
+  "/icons/チューリップアイコン.png",
+  "/icons/幾何学図形アイコン.png",
+  "/icons/魚アイコン.png",
+  "/icons/犬アイコン.png",
+  "/icons/人食いザメアイコン.png",
+  "/icons/闘牛アイコン.png",
+  "/icons/狼アイコン.png",
+  ];
   useEffect(() => {
     // 既存のユーザー情報を読み込む
     const storedName = localStorage.getItem("user_name");
@@ -69,7 +79,48 @@ export default function ProfileEditPage() {
     }
 
     if (storedName) setUserName(storedName);
-    if (storedBio) setBio(storedBio);
+    if (storedBio && storedBio !== "null") {
+      setBio(storedBio);
+    } else {
+      setBio("");
+    }
+
+    // バックエンド使用モードならタグも読み込む
+    const loadTags = async () => {
+      // バックエンドを使用しないモードならタグの読み込みはスキップする
+      if (!isUsingBackend()) {
+        return;
+      }
+
+      try {
+        // バックエンドからタグを取得して選択肢をセットする
+        const tags = await getAllTags();
+        const storedSkillIds = localStorage.getItem("user_skill_ids");
+
+        // 取得したタグを選択肢としてセットする
+        setAvailableTags(tags);
+
+        // ローカルに保存されているタグIDを読み込んで選択状態を復元する
+        if (storedSkillIds) {
+          try {
+            // 文字列から配列に変換して、タグIDの配列としてセットする
+            const parsedIds = JSON.parse(storedSkillIds);
+            if (Array.isArray(parsedIds)) {
+              setSelectedTagIds(parsedIds.filter((id): id is string => typeof id === "string"));
+            }
+          } catch {
+            // JSON.parse に失敗した場合は何もしない（選択状態は復元されないが、タグの表示自体はされる）
+            localStorage.removeItem("user_skill_ids");
+          }
+        }
+      } catch (error) {
+        // タグの取得に失敗しても画面自体は表示できるようにエラーをキャッチする
+        console.error("タグ読み込みエラー:", error);
+      }
+    };
+
+    // タグを読み込む（バックエンド使用モードの場合）
+    loadTags();
   }, []);
 
   // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,11 +135,25 @@ export default function ProfileEditPage() {
   // };
 
   const toggleSkill = (skill: string) => {
-    setSelectedSkills((prev) =>
-      prev.includes(skill)
+    const tagId = availableTags.find((tag) => tag.tag === skill)?.id;
+
+    setSelectedSkills((prev) => {
+      const nextSkills = prev.includes(skill)
         ? prev.filter((s) => s !== skill)
-        : [...prev, skill]
-    );
+        : [...prev, skill];
+
+      if (tagId) {
+        setSelectedTagIds((current) =>
+          prev.includes(skill)
+            ? current.filter((id) => id !== tagId)
+            : current.includes(tagId)
+              ? current
+              : [...current, tagId]
+        );
+      }
+
+      return nextSkills;
+    });
   };
 
   const addCustomSkill = () => {
@@ -96,10 +161,19 @@ export default function ProfileEditPage() {
       customSkill.trim() &&
       !selectedSkills.includes(customSkill)
     ) {
+      const normalizedSkill = customSkill.trim();
+      const matchedTagId = availableTags.find((tag) => tag.tag === normalizedSkill)?.id;
+
       setSelectedSkills((prev) => [
         ...prev,
-        customSkill.trim(),
+        normalizedSkill,
       ]);
+
+      if (matchedTagId) {
+        setSelectedTagIds((current) =>
+          current.includes(matchedTagId) ? current : [...current, matchedTagId]
+        );
+      }
 
       setCustomSkill("");
     }
@@ -112,14 +186,36 @@ export default function ProfileEditPage() {
     try {
       if (isUsingBackend()) {
         // API 経由でプロフィールを更新する
-        const payload: { username?: string; bio?: string } = {};
+        const payload: { username?: string; bio?: string; tag_ids?: string[] } = {};
+        const uniqueSelectedSkills = Array.from(new Set(selectedSkills.map((skill) => skill.trim()).filter(Boolean)));
+        const existingTagNames = new Set(availableTags.map((tag) => tag.tag));
+        const missingTags = uniqueSelectedSkills.filter((skill) => !existingTagNames.has(skill));
+
+        // バックエンドに存在しないタグは先に作成しておく
+        if (missingTags.length > 0) {
+          await Promise.all(missingTags.map((skill) => createTag({ tag: skill })));
+        }
+
+        // タグを再取得して最新のタグリストを得る（新規作成したタグのIDを取得するため）
+        const refreshedTags = await getAllTags();
+        setAvailableTags(refreshedTags);
+
+        const resolvedTagIds = Array.from(
+          new Set([
+            ...selectedTagIds,
+            ...uniqueSelectedSkills
+              .map((skill) => refreshedTags.find((tag) => tag.tag === skill)?.id)
+              .filter((tagId): tagId is string => Boolean(tagId)),
+          ])
+        );
 
         // username は空文字を送らず、入力があるときだけ更新する
         if (userName.trim()) {
           payload.username = userName.trim();
         }
         // 自己紹介は空でも送って、画面表示と保存内容を揃える
-        payload.bio = bio;
+        payload.bio = bio ?? "";
+        payload.tag_ids = resolvedTagIds;
 
         // API でプロフィールを更新して返ってきた内容をローカルに保存する
         const result = await updateProfile(payload);
@@ -134,6 +230,19 @@ export default function ProfileEditPage() {
         if (result.profile?.id) {
           localStorage.setItem("profile_id", result.profile.id);
         }
+        if (result.profile?.profileTags) {
+          const updatedTagNames = result.profile.profileTags
+            .map((profileTag) => profileTag.tag?.tag)
+            .filter((tag): tag is string => Boolean(tag && tag.trim()));
+          const updatedTagIds = result.profile.profileTags
+            .map((profileTag) => profileTag.tag_id)
+            .filter((tagId): tagId is string => Boolean(tagId));
+
+          setSelectedSkills(updatedTagNames);
+          setSelectedTagIds(updatedTagIds);
+          localStorage.setItem("user_skills", JSON.stringify(updatedTagNames));
+          localStorage.setItem("user_skill_ids", JSON.stringify(updatedTagIds));
+        }
       }
 
       // localStorage も更新して既存画面の表示を即時反映
@@ -141,7 +250,7 @@ export default function ProfileEditPage() {
       if (avatarUrl) {
         localStorage.setItem("avatar_url", avatarUrl);
       }
-      localStorage.setItem("user_bio", bio);
+      localStorage.setItem("user_bio", bio ?? "");
 
       alert("プロフィールを更新しました");
       router.push("/profile");
@@ -335,7 +444,7 @@ export default function ProfileEditPage() {
               <textarea
                 className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-3 min-h-[120px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition"
                 placeholder="自己紹介やスキルなどを入力してください"
-                value={bio}
+                value={bio ?? ""}
                 onChange={(e) => setBio(e.target.value)}
               />
             </div>
@@ -360,9 +469,9 @@ export default function ProfileEditPage() {
                 ))}
               </div>
 
-              {/* 候補 */}
+              {/* 技術スタック候補 */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {techStacks.map((skill) => (
+                {skillCandidates.map((skill) => (
                   <button
                     key={skill}
                     type="button"
