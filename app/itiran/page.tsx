@@ -14,10 +14,11 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "creation" | "question">("all");
   const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState("");
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
-  const [tempSelectedTags, setTempSelectedTags] = useState<string[]>([]);
+  const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);
 
   useEffect(() => {
     // ユーザー名を取得
@@ -37,26 +38,57 @@ export default function Page() {
           const token = localStorage.getItem("access_token");
           const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
+          // タグ ID のクエリパラメータを構築（コンマ区切り）
+          const tagQuery = selectedTagIds.length > 0 ? `?tag_ids=${selectedTagIds.join(',')}` : '';
+          const postsUrl = `/api/posts${tagQuery}`;
+          const questionsUrl = `/api/questions${tagQuery}`;
+
+          console.log("[DEBUG] selectedTagIds:", selectedTagIds);
+          console.log("[DEBUG] tagQuery:", tagQuery);
+          console.log("[DEBUG] postsUrl:", postsUrl);
+          console.log("[DEBUG] questionsUrl:", questionsUrl);
+
           // 制作物 (postテーブル) と 質問 (questionテーブル) の両方から取得
           const [postsRes, questionsRes] = await Promise.all([
-            fetch("/api/posts", { headers }).catch(() => null),
-            fetch("/api/questions", { headers }).catch(() => null),
+            fetch(postsUrl, { headers }).catch(() => null),
+            fetch(questionsUrl, { headers }).catch(() => null),
           ]);
+
+          console.log("[DEBUG] postsRes status:", postsRes?.status, "ok:", postsRes?.ok);
+          console.log("[DEBUG] questionsRes status:", questionsRes?.status, "ok:", questionsRes?.ok);
+
+          // タグの抽出関数（postTags/questionTags から tag.tag を抜き取る）
+          const extractTagNames = (items?: any[]) =>
+            (items || [])
+              .map((item) => item?.tag?.tag)
+              .filter((tag): tag is string => typeof tag === "string" && tag.length > 0);
 
           let postsData: any[] = [];
           if (postsRes && postsRes.ok) {
             const data = await postsRes.json();
             const arr = Array.isArray(data) ? data : data.posts || [];
+            console.log("[DEBUG] Posts response:", data);
+            console.log("[DEBUG] Posts array length:", arr.length);
             // postテーブルからの取得データは 'creation'
-            postsData = arr.map((p: any) => ({ ...p, type: 'creation' }));
+            postsData = arr.map((p: any) => ({
+              ...p,
+              type: "creation",
+              tags: p.tags ?? extractTagNames(p.postTags),
+            }));
           }
 
           let questionsData: any[] = [];
           if (questionsRes && questionsRes.ok) {
             const data = await questionsRes.json();
             const arr = Array.isArray(data) ? data : data.questions || [];
+            console.log("[DEBUG] Questions response:", data);
+            console.log("[DEBUG] Questions array length:", arr.length);
             // questionテーブルからの取得データは 'question'
-            questionsData = arr.map((q: any) => ({ ...q, type: 'question' }));
+            questionsData = arr.map((q: any) => ({
+              ...q,
+              type: "question",
+              tags: q.tags ?? extractTagNames(q.questionTags),
+            }));
           }
 
           // 両方とも取得に失敗（サーバーエラーなど）した場合はエラーとする
@@ -83,11 +115,34 @@ export default function Page() {
     };
 
     fetchPosts();
+  }, [selectedTagIds]);
+
+  // 全タグを取得（初回マウント時のみ）
+  useEffect(() => {
+    const fetchAllTags = async () => {
+      try {
+        if (isUsingBackend()) {
+          const token = localStorage.getItem("access_token");
+          const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+          
+          const res = await fetch("/api/tags", { headers });
+          if (res.ok) {
+            const tags = await res.json();
+            const tagArray = Array.isArray(tags) ? tags : tags.tags || [];
+            setAllTags(tagArray);
+          }
+        }
+      } catch (err) {
+        console.error("[Tags] 取得エラー:", err);
+      }
+    };
+    
+    fetchAllTags();
   }, []);
 
   // タグの選択・解除関数
       const toggleTag = (tag: string) => {
-        setTempSelectedTags((prev) =>
+        setTempSelectedTagNames((prev) =>
           prev.includes(tag)
             ? prev.filter((t) => t !== tag)
             : [...prev, tag]
@@ -99,19 +154,13 @@ export default function Page() {
     setTagSearch(e.target.value);
   };
 
-  // フィルタリング
+  // フィルタリング（種別のみ、タグはバックエンド側で実施）
   const filteredPosts = posts.filter((post) => {
   const typeMatch =
     filterType === "all" ||
     post.type === filterType;
 
-  const tagMatch =
-  selectedTags.length === 0 ||
-  selectedTags.every((tag) =>
-    post.tags?.includes(tag) ?? false
-  );
-
-  return typeMatch && tagMatch;
+  return typeMatch;
 });
 
   // 投稿をソート
@@ -153,7 +202,11 @@ export default function Page() {
             {/* 左：タグ検索 */}
             <button
               onClick={() => {
-                setTempSelectedTags(selectedTags);
+                // 選択中のタグ ID からタグ名に変換
+                const tagNames = selectedTagIds
+                  .map(id => allTags.find(tag => tag.id === id)?.tag)
+                  .filter((tag): tag is string => !!tag);
+                setTempSelectedTagNames(tagNames);
                 setIsTagModalOpen(true);
               }}
               className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200"
@@ -178,9 +231,9 @@ export default function Page() {
                 タグ検索
               </span>
 
-              {selectedTags.length > 0 && (
+              {selectedTagIds.length > 0 && (
                 <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-                  {selectedTags.length}
+                  {selectedTagIds.length}
                 </span>
               )}
             </button>
@@ -358,7 +411,7 @@ export default function Page() {
             <div className="flex items-center justify-between mb-4">
               
               <div className="flex gap-2 flex-wrap">
-                {tempSelectedTags.map((tag) => (
+                {tempSelectedTagNames.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
@@ -371,7 +424,7 @@ export default function Page() {
               </div>
 
               <button
-                onClick={() => setTempSelectedTags([])}
+                onClick={() => setTempSelectedTagNames([])}
                 className="ml-4 shrink-0 px-3 py-1 bg-gray-200 rounded-full text-sm"
               >
                 クリア
@@ -380,31 +433,21 @@ export default function Page() {
 
             {/* タグ候補 */}
                 <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
-                  {Object.entries(
-                    posts.flatMap((post) => post.tags || []).reduce(
-                      (acc, tag) => {
-                        acc[tag] = (acc[tag] || 0) + 1;
-                        return acc;
-                      },
-                      {} as Record<string, number>
+                  {allTags
+                    .filter((tag) =>
+                      tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
                     )
-                  )
-                    .sort((a, b) => b[1] - a[1])
-                    .filter(([tag]) =>
-                      tag.toLowerCase().includes(tagSearch.toLowerCase())
-                    )
-                    .slice(0, 10)
-                    .map(([tag, count]) => (
+                    .map((tag) => (
                       <button
-                        key={tag}
-                        onClick={() => toggleTag(tag)}
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.tag)}
                         className={`px-3 py-1 rounded-full text-sm transition ${
-                          tempSelectedTags.includes(tag)
+                          tempSelectedTagNames.includes(tag.tag)
                             ? "bg-blue-500 text-white"
                             : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
-                        #{tag} ({count})
+                        #{tag.tag}
                       </button>
                     ))}
                 </div>
@@ -421,7 +464,11 @@ export default function Page() {
 
                   <button
                     onClick={() => {
-                      setSelectedTags(tempSelectedTags);
+                      // 選択したタグ名からタグ ID に変換
+                      const tagIds = tempSelectedTagNames
+                        .map(name => allTags.find(tag => tag.tag === name)?.id)
+                        .filter((id): id is string => !!id);
+                      setSelectedTagIds(tagIds);
                       setIsTagModalOpen(false);
                     }}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
