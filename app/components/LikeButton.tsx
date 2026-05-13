@@ -10,8 +10,15 @@ interface LikeButtonProps {
 
 export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
   const [likes, setLikes] = useState(initialLikes);
-  const [hasLiked, setHasLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [hasLiked, setHasLiked] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(`liked_${postId}`) === "true";
+    }
+
+    return false;
+  });
 
   const handleLike = async () => {
     // すでに「いいね」している場合は解除、していない場合は追加
@@ -22,6 +29,11 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
     setHasLiked(newHasLiked);
     setLikes(newLikes);
     setIsLoading(true);
+
+    localStorage.setItem(
+      `liked_${postId}`,
+      String(newHasLiked)
+    );
 
     try {
       if (isUsingBackend()) {
