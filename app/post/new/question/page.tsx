@@ -40,13 +40,7 @@ export default function CreateQuestionPage() {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    const finalTags = [
-      ...selectedTags,
-      ...customTag
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    ];
+    const finalTags = selectedTags;
 
     // if (image) {
     //   formData.append("image", image);
@@ -143,30 +137,50 @@ export default function CreateQuestionPage() {
             </div>
 
             {/* 自由入力 */}
-            <input
-              type="text"
-              placeholder="自由入力タグ（カンマ区切り）"
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="タグを入力"
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                className="flex-1 border border-gray-300 text-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  const trimmed = customTag.trim();
+
+                  if (
+                    trimmed &&
+                    !selectedTags.includes(trimmed)
+                  ) {
+                    setSelectedTags([
+                      ...selectedTags,
+                      trimmed,
+                    ]);
+                  }
+
+                  setCustomTag("");
+                }}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+              >
+                追加
+              </button>
+            </div>
 
             {/* 選択中タグ */}
             {(selectedTags.length > 0 || customTag) && (
               <div className="flex flex-wrap gap-2 pt-2">
-                {[
-                  ...selectedTags,
-                  ...customTag
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                ].map((tag) => (
-                  <span
+                {selectedTags.map((tag) => (
+                  <button
                     key={tag}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition"
                   >
-                    #{tag}
-                  </span>
+                    #{tag} ×
+                  </button>
                 ))}
               </div>
             )}
