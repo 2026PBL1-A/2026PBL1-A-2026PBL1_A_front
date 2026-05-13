@@ -2,6 +2,7 @@ import { dummyPosts } from "@/app/data/dummyPosts";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CommentSection from "@/app/components/CommentSection";
+import LikeButton from "@/app/components/LikeButton";
 import { isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
 
@@ -94,14 +95,21 @@ export default async function PostDetailPage({
               </h1>
               
               {/* メタデータ */}
-              <div className="flex items-center text-gray-500 text-sm">
-                {(post.createdAt || post.created_at) && (
-                  <div className="flex items-center mr-4">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <time dateTime={post.createdAt || post.created_at}>
-                      {formatDate(post.createdAt || post.created_at)}
-                    </time>
-                  </div>
+              <div className="flex items-center justify-between text-gray-500 text-sm">
+                <div className="flex items-center">
+                  {(post.createdAt || post.created_at) && (
+                    <div className="flex items-center mr-4">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <time dateTime={post.createdAt || post.created_at}>
+                        {formatDate(post.createdAt || post.created_at)}
+                      </time>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 評価（いいね）ボタン：制作物の場合のみ表示 */}
+                {post.type === 'creation' && (
+                  <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
                 )}
               </div>
             </header>
