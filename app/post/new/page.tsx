@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
-import Image from "next/image";
+//import Image from "next/image";
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState("");

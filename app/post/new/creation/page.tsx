@@ -3,15 +3,38 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
-import Image from "next/image";
+//import Image from "next/image";
 
 export default function CreateCreationPage() {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(""); // 自由入力のカテゴリ
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState("");
   // const [image, setImage] = useState<File | null>(null);
+  const presetTags = [
+    "React",
+    "Next.js",
+    "TypeScript",
+    "JavaScript",
+    "Java",
+    "Python",
+    "C",
+    "C++",
+    "HTML",
+    "CSS",
+    "Node.js",
+    "Webアプリ",
+  ];
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +42,23 @@ export default function CreateCreationPage() {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("content", content);
-    formData.append("tag", category);
+    const finalTags = [
+      ...selectedTags,
+      ...customTag
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ];
 
     // if (image) {
     //   formData.append("image", image);
     // }
 
-    if (!title || !category || !content) {
+    if (
+      !title ||
+      finalTags.length === 0 ||
+      !content
+    ) {
       alert("すべてのフィールドを入力してください");
       return;
     }
@@ -42,7 +75,7 @@ export default function CreateCreationPage() {
           },
           body: JSON.stringify({
             title,
-            tag: category,
+            tags: finalTags,
             content,
           }),
         });
@@ -87,19 +120,58 @@ export default function CreateCreationPage() {
             />
           </div>
 
-          {/* 自由入力カテゴリ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              カテゴリ (例: Javaなどの言語)
+          {/* タグ選択 */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              タグ
             </label>
+
+            {/* プリセットタグ */}
+            <div className="flex flex-wrap gap-2">
+              {presetTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-sm transition ${
+                    selectedTags.includes(tag)
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+
+            {/* 自由入力 */}
             <input
               type="text"
+              placeholder="自由入力タグ（カンマ区切り）"
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
               className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Java, React, Webアプリなど"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
             />
+
+            {/* 選択中タグ */}
+            {(selectedTags.length > 0 || customTag) && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {[
+                  ...selectedTags,
+                  ...customTag
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean),
+                ].map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 本文 */}
