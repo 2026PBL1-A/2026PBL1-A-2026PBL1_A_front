@@ -39,9 +39,18 @@ export default function ProfilePage() {
   const [lastUpdated, setLastUpdated] = useState("2026/05/01 14:40"); // 仮の更新日時
   const [selectedIcon, setSelectedIcon] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [skills, setSkills] = useState<string[]>(["JavaScript", "React", "Next.js", "TypeScript", "Tailwind CSS", "Node.js"]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [skills, setSkills] = useState<string[]>([]);
+
+  useEffect(() => {
+    const storedSkills = localStorage.getItem("user_skills");
+
+    if (storedSkills) {
+      setSkills(JSON.parse(storedSkills));
+    }
+  }, []);
 
   // タブの状態管理
   const [activeTab, setActiveTab] = useState<"skills" | "creations" | "questions">("skills");
@@ -329,15 +338,15 @@ export default function ProfilePage() {
             {activeTab === "skills" && (
               <div className="p-6">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">習得技術スタック</h2>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mt-4">
                   {skills.map((skill) => (
-                    <span key={skill} className="px-4 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-bold shadow-sm">
+                    <span
+                      key={skill}
+                      className="px-3 py-1 bg-gray-100 rounded-full text-sm"
+                    >
                       {skill}
                     </span>
                   ))}
-                  <span className="px-4 py-1.5 border border-dashed border-gray-400 text-gray-500 rounded-full text-sm font-bold cursor-pointer hover:bg-gray-200 transition">
-                    + 追加する
-                  </span>
                 </div>
               </div>
             )}
