@@ -6,7 +6,7 @@ import Link from "next/link";
 import Menu from "@/app/components/aikon";
 import Image from "next/image";
 import { isUsingBackend } from "@/lib/api";
-import { updateProfile } from "@/lib/profileApi";
+import { updateProfile, updatePassword } from "@/lib/profileApi";
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -20,6 +20,13 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [open, setOpen] = useState(false);
+
+  // パスワード変更モーダル用のステート
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const icons = [
   "/icons/さくらんぼアイコン.png",
   "/icons/チューリップアイコン.png",
@@ -97,6 +104,52 @@ export default function ProfileEditPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("新しいパスワードと確認用パスワードが一致しません");
+      return;
+    }
+
+    try {
+      if (isUsingBackend()) {
+        // バックエンドモード：パスワード変更APIを呼び出す
+        // ※実際のエンドポイントやパラメータ名はバックエンドチームの仕様に合わせて変更してください
+        await updatePassword({
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+          confirmPassword: confirmPassword
+        });
+      } else {
+        // ローカルモード：ダミー検証（loginでのダミーパスワード 'pass1234' を正とする）
+        if (currentPassword !== "pass1234") {
+          throw new Error("現在のパスワードが間違っています（ダミー検証: pass1234を入力してください）");
+        }
+      }
+
+      // 成功した場合
+      alert("パスワードを変更しました");
+      setIsPasswordModalOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error("パスワード変更エラー:", error);
+      const message = error instanceof Error ? error.message : "パスワードの変更に失敗しました";
+      setPasswordError(message);
+    }
+  };
+
+  const closePasswordModal = () => {
+    setIsPasswordModalOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
   };
 
   return (
@@ -236,6 +289,17 @@ export default function ProfileEditPage() {
               />
             </div>
 
+            {/* パスワード変更ボタン */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 font-bold rounded hover:bg-gray-300 transition"
+              >
+                パスワードを変更する
+              </button>
+            </div>
+
 
             {/* ボタングループ */}
             <div className="pt-6 flex gap-4">
@@ -258,6 +322,81 @@ export default function ProfileEditPage() {
           </form>
         </div>
       </div>
+
+      {/* パスワード変更モーダル */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">
+              パスワード変更
+            </h2>
+            
+            {passwordError && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                {passwordError}
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  現在のパスワード
+                </label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  新しいパスワード
+                </label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  新しいパスワード (確認)
+                </label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 text-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={closePasswordModal}
+                  className="w-1/2 bg-gray-100 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-200 transition"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={!currentPassword || !newPassword || !confirmPassword}
+                  className="w-1/2 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  変更する
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
