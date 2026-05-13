@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
+import { getAllTags, createTag } from "@/lib/profileApi";
 //import Image from "next/image";
 
 export default function CreateQuestionPage() {
@@ -11,6 +12,8 @@ export default function CreateQuestionPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
   // const [image, setImage] = useState<File | null>(null);
   const presetTags = [
@@ -26,6 +29,32 @@ export default function CreateQuestionPage() {
     "Tailwind",
   ];
 
+  const skillCandidates = isUsingBackend()
+    ? availableTags.map((tag) => tag.tag)
+    : presetTags;
+
+  useEffect(() => {
+    // バックエンド使用モードならタグも読み込む
+    const loadTags = async () => {
+      // バックエンドを使用しないモードならタグの読み込みはスキップする
+      if (!isUsingBackend()) {
+        return;
+      }
+
+      try {
+        // バックエンドからタグを取得して選択肢をセットする
+        const tags = await getAllTags();
+        setAvailableTags(tags);
+      } catch (error) {
+        // タグの取得に失敗しても画面自体は表示できるようにエラーをキャッチする
+        console.error("タグ読み込みエラー:", error);
+      }
+    };
+
+    // タグを読み込む（バックエンド使用モードの場合）
+    loadTags();
+  }, []);
+
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag)
@@ -37,14 +66,7 @@ export default function CreateQuestionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
     const finalTags = selectedTags;
-
-    // if (image) {
-    //   formData.append("image", image);
-    // }
 
     if (
       !title ||
@@ -58,6 +80,35 @@ export default function CreateQuestionPage() {
     setIsLoading(true);
     try {
       if (isUsingBackend()) {
+        // タグID解決フロー（プロフィール編集と同じロジック）
+        const uniqueSelectedTags = Array.from(
+          new Set(finalTags.map((tag) => tag.trim()).filter(Boolean))
+        );
+        const existingTagNames = new Set(availableTags.map((tag) => tag.tag));
+        const missingTags = uniqueSelectedTags.filter(
+          (tag) => !existingTagNames.has(tag)
+        );
+
+        // バックエンドに存在しないタグは先に作成しておく
+        if (missingTags.length > 0) {
+          await Promise.all(
+            missingTags.map((tag) => createTag({ tag }))
+          );
+        }
+
+        // タグを再取得して最新のタグリストを得る（新規作成したタグのIDを取得するため）
+        const refreshedTags = await getAllTags();
+        setAvailableTags(refreshedTags);
+
+        const resolvedTagIds = Array.from(
+          new Set([
+            ...selectedTagIds,
+            ...uniqueSelectedTags
+              .map((tag) => refreshedTags.find((t) => t.tag === tag)?.id)
+              .filter((tagId): tagId is string => Boolean(tagId)),
+          ])
+        );
+
         const token = localStorage.getItem("access_token");
         const response = await fetch("/api/questions", {
           method: "POST",
@@ -67,8 +118,8 @@ export default function CreateQuestionPage() {
           },
           body: JSON.stringify({
             title,
-            tags: finalTags,
             content,
+            tag_ids: resolvedTagIds,
           }),
         });
 
@@ -118,9 +169,9 @@ export default function CreateQuestionPage() {
               タグ
             </label>
 
-            {/* プリセットタグ */}
+            {/* タグ候補 */}
             <div className="flex flex-wrap gap-2">
-              {presetTags.map((tag) => (
+              {skillCandidates.map((tag) => (
                 <button
                   key={tag}
                   type="button"
