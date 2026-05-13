@@ -5,43 +5,56 @@ import { isUsingBackend } from "@/lib/api";
 
 interface LikeButtonProps {
   postId: string;
-  initialLikes: number;
+  initialScore: number;
 }
 
-export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
-  const [likes, setLikes] = useState(initialLikes);
+export default function LikeButton({ postId, initialScore }: LikeButtonProps) {
+  const [score, setScore] = useState(initialScore);
   const [hasLiked, setHasLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLike = async () => {
     // すでに「いいね」している場合は解除、していない場合は追加
     const newHasLiked = !hasLiked;
-    const newLikes = newHasLiked ? likes + 1 : likes - 1;
+    const newScore = newHasLiked ? score + 1 : score - 1;
 
     // UIを即時反映（オプティミスティックUI）
     setHasLiked(newHasLiked);
-    setLikes(newLikes);
+    setScore(newScore);
     setIsLoading(true);
 
     try {
       if (isUsingBackend()) {
         const token = localStorage.getItem("access_token");
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
+        if (!token) {
+          alert("評価するにはログインが必要です。");
+          setHasLiked(!newHasLiked);
+          setScore(score);
+          setIsLoading(false);
+          return;
         }
 
-        // バックエンドとの通信（仕様が決まるまでのダミーエンドポイント）
-        // ※バックエンドの仕様に合わせて変更してください（例: POST /api/posts/{id}/like）
-        const response = await fetch(`/api/posts/${postId}/like`, {
-          method: newHasLiked ? "POST" : "DELETE",
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        };
+
+        // バックエンドの post-scores エンドポイント（トグル）を呼び出す
+        const response = await fetch(`/api/post-scores/${postId}`, {
+          method: "POST",
           headers,
         });
 
         if (!response.ok) {
-          throw new Error("評価の更新に失敗しました");
+          const errorBody = await response.json().catch(() => ({}));
+          console.error("[LikeButton] APIエラー詳細:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorBody,
+          });
+          throw new Error(
+            errorBody.message || `評価の更新に失敗しました (${response.status})`
+          );
         }
       } else {
         // ローカルダミー環境の場合はコンソール出力のみ
@@ -51,7 +64,7 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
       console.error("[LikeButton] エラー:", error);
       // エラー時は元の状態に戻す
       setHasLiked(!newHasLiked);
-      setLikes(likes);
+      setScore(score);
       alert("評価の更新に失敗しました。もう一度お試しください。");
     } finally {
       setIsLoading(false);
@@ -78,7 +91,7 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
         />
       </svg>
-      <span className="text-lg">{likes}</span>
+      <span className="text-lg">{score}</span>
     </button>
   );
 }

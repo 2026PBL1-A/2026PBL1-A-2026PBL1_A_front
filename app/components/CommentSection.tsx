@@ -164,8 +164,9 @@ export default function CommentSection({
   };
 
   // ユーザー名を取得するヘルパー関数
-  const getUsername = (c: CommentData) => {
+  const getUsername = (c: CommentData & { userId?: any }) => {
     if (c.username) return c.username;
+    if (c.userId && c.userId.username) return c.userId.username;
     if (c.userid && c.userid.username) return c.userid.username;
     if (c.user_id && c.user_id.username) return c.user_id.username;
     return "名無しユーザー";

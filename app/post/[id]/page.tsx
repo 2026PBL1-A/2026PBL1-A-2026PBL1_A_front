@@ -25,7 +25,11 @@ export default async function PostDetailPage({
 
       if (response.ok) {
         const data = await response.json();
-        post = { ...data, type: "creation" };
+        post = { 
+          ...data, 
+          type: "creation",
+          tags: data.tag ? [data.tag] : []
+        };
         console.info(`[Post Detail] バックエンドから投稿 ID ${resolvedParams.id} を取得`);
       } else {
         // posts になければ questions を探す
@@ -35,7 +39,11 @@ export default async function PostDetailPage({
         );
         if (qResponse.ok) {
           const data = await qResponse.json();
-          post = { ...data, type: "question" };
+          post = { 
+            ...data, 
+            type: "question",
+            tags: data.tag ? [data.tag] : []
+          };
           console.info(`[Post Detail] バックエンドから質問 ID ${resolvedParams.id} を取得`);
         }
       }
@@ -109,7 +117,7 @@ export default async function PostDetailPage({
                 
                 {/* 評価（いいね）ボタン：制作物の場合のみ表示 */}
                 {post.type === 'creation' && (
-                  <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
+                  <LikeButton postId={post.id} initialScore={post.score ?? 0} />
                 )}
               </div>
             </header>

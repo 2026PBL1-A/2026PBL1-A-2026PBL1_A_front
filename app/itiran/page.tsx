@@ -48,7 +48,11 @@ export default function Page() {
             const data = await postsRes.json();
             const arr = Array.isArray(data) ? data : data.posts || [];
             // postテーブルからの取得データは 'creation'
-            postsData = arr.map((p: any) => ({ ...p, type: 'creation' }));
+            postsData = arr.map((p: any) => ({
+              ...p,
+              type: 'creation',
+              tags: p.tag ? [p.tag] : []
+            }));
           }
 
           let questionsData: any[] = [];
@@ -56,7 +60,11 @@ export default function Page() {
             const data = await questionsRes.json();
             const arr = Array.isArray(data) ? data : data.questions || [];
             // questionテーブルからの取得データは 'question'
-            questionsData = arr.map((q: any) => ({ ...q, type: 'question' }));
+            questionsData = arr.map((q: any) => ({
+              ...q,
+              type: 'question',
+              tags: q.tag ? [q.tag] : []
+            }));
           }
 
           // 両方とも取得に失敗（サーバーエラーなど）した場合はエラーとする
@@ -121,11 +129,11 @@ export default function Page() {
       const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
       return dateB - dateA;
     } else {
-      // 評価順 (likes が多い順)
-      const likesA = a.likes ?? 0;
-      const likesB = b.likes ?? 0;
-      if (likesA !== likesB) {
-        return likesB - likesA;
+      // 評価順 (score が多い順)
+      const scoreA = a.score ?? 0;
+      const scoreB = b.score ?? 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
       }
       // いいねが同じ場合は新しい順
       const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
@@ -272,7 +280,7 @@ export default function Page() {
                     {post.type === 'creation' && (
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
-                        {post.likes ?? 0}
+                        {post.score ?? 0}
                       </span>
                     )}
                     {post.created_at && (
