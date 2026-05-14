@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isUsingBackend } from "@/lib/api";
 
 interface LikeButtonProps {
@@ -12,6 +12,10 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
   const [likes, setLikes] = useState(initialLikes);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    setLikes(initialLikes);
+  }, [initialLikes]);
+
   const [hasLiked, setHasLiked] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`liked_${postId}`) === "true";
@@ -21,49 +25,87 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
   });
 
   const handleLike = async () => {
-    // すでに「いいね」している場合は解除、していない場合は追加
-    const newHasLiked = !hasLiked;
-    const newLikes = newHasLiked ? likes + 1 : likes - 1;
-
-    // UIを即時反映（オプティミスティックUI）
-    setHasLiked(newHasLiked);
-    setLikes(newLikes);
     setIsLoading(true);
-
-    localStorage.setItem(
-      `liked_${postId}`,
-      String(newHasLiked)
-    );
 
     try {
       if (isUsingBackend()) {
         const token = localStorage.getItem("access_token");
+
+        // トークンがない場合は API を呼ばない
+        if (!token) {
+          alert("ログインが必要です");
+          return;
+        }
+
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         };
+
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
         // バックエンドとの通信（仕様が決まるまでのダミーエンドポイント）
         // ※バックエンドの仕様に合わせて変更してください（例: POST /api/posts/{id}/like）
-        const response = await fetch(`/api/posts/${postId}/like`, {
-          method: newHasLiked ? "POST" : "DELETE",
+
+        console.log("postId:", postId);
+        console.log("token:", localStorage.getItem("access_token"));
+
+        const response = await fetch(`/api/post-scores/${postId}`, {
+          method: "POST",
           headers,
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+
+          console.error("status:", response.status);
+          console.error("body:", errorText);
+
+          if (response.status === 401) {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user_id");
+            localStorage.removeItem("user_name");
+
+            alert("ログインの有効期限が切れています。再度ログインしてください。");
+
+            // 必要ならログイン画面へ遷移
+            // window.location.href = "/login";
+          }
+
           throw new Error("評価の更新に失敗しました");
         }
+
+        const data = await response.json();
+
+        console.log("response data:", data);
+
+        // サーバーから返ってきた最新値を反映
+        setHasLiked(data.liked);
+        setLikes(data.score);
+
+        localStorage.setItem(
+          `liked_${postId}`,
+          String(data.liked)
+        );
       } else {
+        const newHasLiked = !hasLiked;
+        const newLikes = newHasLiked ? likes + 1 : likes - 1;
+
+        setHasLiked(newHasLiked);
+        setLikes(Math.max(0, newLikes));
+
+        localStorage.setItem(
+          `liked_${postId}`,
+          String(newHasLiked)
+        );
+
         // ローカルダミー環境の場合はコンソール出力のみ
         console.info(`[LikeButton] ${newHasLiked ? "評価しました" : "評価を取り消しました"} (Post ID: ${postId})`);
       }
     } catch (error) {
       console.error("[LikeButton] エラー:", error);
-      // エラー時は元の状態に戻す
-      setHasLiked(!newHasLiked);
-      setLikes(likes);
       alert("評価の更新に失敗しました。もう一度お試しください。");
     } finally {
       setIsLoading(false);
