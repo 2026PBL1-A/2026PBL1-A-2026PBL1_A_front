@@ -16,6 +16,7 @@ export default function Page() {
   const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState("");
+  const [keywordSearch, setKeywordSearch] = useState("");
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
@@ -51,11 +52,20 @@ export default function Page() {
           console.log("[DEBUG] questionsUrl:", questionsUrl);
           */
 
-          // 制作物 (postテーブル) と 質問 (questionテーブル) の両方から取得
-          const [postsRes, questionsRes] = await Promise.all([
-            fetch(postsUrl, { headers }).catch(() => null),
-            fetch(questionsUrl, { headers }).catch(() => null),
-          ]);
+          // フィルター状態に応じてAPI呼び出しを分ける
+          let postsRes: Response | null = null;
+          let questionsRes: Response | null = null;
+
+          if (filterType === "all") {
+            [postsRes, questionsRes] = await Promise.all([
+              fetch(postsUrl, { headers }).catch(() => null),
+              fetch(questionsUrl, { headers }).catch(() => null),
+            ]);
+          } else if (filterType === "creation") {
+            postsRes = await fetch(postsUrl, { headers }).catch(() => null);
+          } else if (filterType === "question") {
+            questionsRes = await fetch(questionsUrl, { headers }).catch(() => null);
+          }
 
           // レスポンスのステータスをログで確認
           /*
@@ -109,13 +119,16 @@ export default function Page() {
             }));
           }
 
-          // 両方とも取得に失敗（サーバーエラーなど）した場合はエラーとする
-          if ((!postsRes || !postsRes.ok) && (!questionsRes || !questionsRes.ok)) {
-            throw new Error(`Failed to fetch posts and questions`);
+          // 取得エラー判定
+          const isPostsFailed = filterType !== "question" && (!postsRes || !postsRes.ok);
+          const isQuestionsFailed = filterType !== "creation" && (!questionsRes || !questionsRes.ok);
+
+          if (isPostsFailed && isQuestionsFailed) {
+            throw new Error(`Failed to fetch data`);
           }
 
           setPosts([...postsData, ...questionsData]);
-          console.info("[Posts] バックエンドから投稿(post)と質問(question)を取得しました");
+          console.info(`[Posts] バックエンドからデータを取得しました (filter: ${filterType})`);
         } else {
           // ローカルダミーデータを使用
           setPosts(dummyPosts);
@@ -133,7 +146,7 @@ export default function Page() {
     };
 
     fetchPosts();
-  }, [selectedTagIds]);
+  }, [selectedTagIds, filterType]);
 
   // 全タグを取得（初回マウント時のみ）
   useEffect(() => {
@@ -172,14 +185,17 @@ export default function Page() {
     setTagSearch(e.target.value);
   };
 
-  // フィルタリング（種別のみ、タグはバックエンド側で実施）
+  // フィルタリング（種別とキーワード）
   const filteredPosts = posts.filter((post) => {
-  const typeMatch =
-    filterType === "all" ||
-    post.type === filterType;
+    const typeMatch = filterType === "all" || post.type === filterType;
+    
+    // キーワード検索（タイトルまたは本文に含まれるか）
+    const keywordMatch = !keywordSearch || 
+      post.title.toLowerCase().includes(keywordSearch.toLowerCase()) || 
+      post.content.toLowerCase().includes(keywordSearch.toLowerCase());
 
-  return typeMatch;
-});
+    return typeMatch && keywordMatch;
+  });
 
   // 投稿をソート
   const sortedPosts = [...filteredPosts].sort((a, b) => {
@@ -212,6 +228,24 @@ export default function Page() {
 
       {/* 投稿一覧エリア */}
       <div className="mt-16 px-4 pb-20 max-w-4xl mx-auto">
+
+        {/* キーワード検索エリア */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="キーワードで検索 (タイトル・本文)"
+              value={keywordSearch}
+              onChange={(e) => setKeywordSearch(e.target.value)}
+              className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
 
         {/* フィルタボタン */}
         {/* 上部操作エリア */}
