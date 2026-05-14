@@ -109,7 +109,7 @@ export default async function PostDetailPage({
                 
                 {/* 評価（いいね）ボタン：制作物の場合のみ表示 */}
                 {post.type === 'creation' && (
-                  <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
+                  <LikeButton postId={post.id} initialLikes={post.score} />
                 )}
               </div>
             </header>
