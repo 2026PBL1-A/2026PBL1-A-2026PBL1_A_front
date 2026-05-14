@@ -74,12 +74,8 @@ export default function CreateCreationPage() {
     //   formData.append("image", image);
     // }
 
-    if (
-      !title ||
-      finalTags.length === 0 ||
-      !content
-    ) {
-      alert("すべてのフィールドを入力してください");
+    if (!title || !content) {
+      alert("タイトルと本文を入力してください");
       return;
     }
 
@@ -115,6 +111,12 @@ export default function CreateCreationPage() {
           ])
         );
 
+        const payload = {
+          title,
+          content,
+          ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
+        };
+
         const token = localStorage.getItem("access_token");
         const response = await fetch("/api/posts", {
           method: "POST",
@@ -122,11 +124,7 @@ export default function CreateCreationPage() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({
-            title,
-            content,
-            tag_ids: resolvedTagIds,
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {

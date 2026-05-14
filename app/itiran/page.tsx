@@ -18,7 +18,7 @@ export default function Page() {
   const [tagSearch, setTagSearch] = useState("");
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
-  const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);
+  const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
 
   useEffect(() => {
     // ユーザー名を取得
@@ -43,10 +43,13 @@ export default function Page() {
           const postsUrl = `/api/posts${tagQuery}`;
           const questionsUrl = `/api/questions${tagQuery}`;
 
+          // デバッグ用ログ
+          /*
           console.log("[DEBUG] selectedTagIds:", selectedTagIds);
           console.log("[DEBUG] tagQuery:", tagQuery);
           console.log("[DEBUG] postsUrl:", postsUrl);
           console.log("[DEBUG] questionsUrl:", questionsUrl);
+          */
 
           // 制作物 (postテーブル) と 質問 (questionテーブル) の両方から取得
           const [postsRes, questionsRes] = await Promise.all([
@@ -54,8 +57,11 @@ export default function Page() {
             fetch(questionsUrl, { headers }).catch(() => null),
           ]);
 
+          // レスポンスのステータスをログで確認
+          /*
           console.log("[DEBUG] postsRes status:", postsRes?.status, "ok:", postsRes?.ok);
           console.log("[DEBUG] questionsRes status:", questionsRes?.status, "ok:", questionsRes?.ok);
+          */
 
           // タグの抽出関数（postTags/questionTags から tag.tag を抜き取る）
           const extractTagNames = (items?: any[]) =>
@@ -63,12 +69,18 @@ export default function Page() {
               .map((item) => item?.tag?.tag)
               .filter((tag): tag is string => typeof tag === "string" && tag.length > 0);
 
+          // postテーブルからの取得データは 'creation'
           let postsData: any[] = [];
           if (postsRes && postsRes.ok) {
             const data = await postsRes.json();
-            const arr = Array.isArray(data) ? data : data.posts || [];
+            const arr = Array.isArray(data) ? data : data.posts || [];    // データが配列でない場合は data.posts を試す
+
+            // デバッグ用ログ
+            /*
             console.log("[DEBUG] Posts response:", data);
             console.log("[DEBUG] Posts array length:", arr.length);
+            */
+
             // postテーブルからの取得データは 'creation'
             postsData = arr.map((p: any) => ({
               ...p,
@@ -77,12 +89,18 @@ export default function Page() {
             }));
           }
 
+          // questionテーブルからの取得データは 'question'
           let questionsData: any[] = [];
           if (questionsRes && questionsRes.ok) {
             const data = await questionsRes.json();
-            const arr = Array.isArray(data) ? data : data.questions || [];
+            const arr = Array.isArray(data) ? data : data.questions || [];    // データが配列でない場合は data.questions を試す
+
+            // デバッグ用ログ
+            /*
             console.log("[DEBUG] Questions response:", data);
             console.log("[DEBUG] Questions array length:", arr.length);
+            */
+           
             // questionテーブルからの取得データは 'question'
             questionsData = arr.map((q: any) => ({
               ...q,
