@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { fetchWithAuth, isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
+import CommentLikeButton from "./CommentLikeButton";
 
 export type CommentData = {
   id: string | number;
@@ -43,14 +44,27 @@ export default function CommentSection({
     async function fetchComments() {
       if (!isUsingBackend()) {
         // ダミーデータ
-        setComments([
-          {
-            id: 1,
-            content: `これはダミーの${label}です。`,
-            created_at: new Date().toISOString(),
-            username: "ダミーユーザー",
-          }
-        ]);
+        if(postType === "question") {
+          setComments([
+            {
+              id: 1,
+              answer: `これはダミーの${label}です。`,
+              created_at: new Date().toISOString(),
+              username: "ダミーユーザー",
+            }
+          ]);
+        }
+        else {
+          setComments([
+            {
+              id: 1,
+              comment: `これはダミーの${label}です。`,
+              created_at: new Date().toISOString(),
+              username: "ダミーユーザー",
+            }
+          ]);
+        }
+        
         return;
       }
 
@@ -195,7 +209,10 @@ export default function CommentSection({
                     </div>
                     {getUsername(c)}
                   </div>
-                  <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
+                    {c.answer && <CommentLikeButton initialCount={1} />}
+                  </div>
                 </div>
                 <div className="text-gray-700 whitespace-pre-wrap ml-11 leading-relaxed">
                   {getDisplayContent(c)}
