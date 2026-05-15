@@ -26,7 +26,7 @@ export default function CreatePostPage() {
     //   }
 
     // ここで送信
-    await fetch("/api/post", {
+    await fetch("/api/posts", {
       method: "POST",
       body: formData,
     });

@@ -180,14 +180,14 @@ export default function ProfilePage() {
             id: post.id,
             title: post.title,
             content: post.content,
-            type: "creation" as const,
+            itemType: "creation" as const,
             created_at: post.created_at,
           })),
           ...profileQuestions.map((q) => ({
             id: q.id,
             title: q.title,
             content: q.content,
-            type: "question" as const,
+            itemType: "question" as const,
             created_at: q.created_at,
           })),
         ];
@@ -219,8 +219,8 @@ export default function ProfilePage() {
     fetchProfileAndPosts();
   }, []);
 
-  const creationPosts = userPosts.filter(post => post.type === 'creation');
-  const questionPosts = userPosts.filter(post => post.type === 'question');
+  const creationPosts = userPosts.filter(post => post.itemType === 'creation');
+  const questionPosts = userPosts.filter(post => post.itemType === 'question');
   const storedUserId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const handleId = (storedUserId || userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id").slice(0, 8);
 

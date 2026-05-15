@@ -1,7 +1,7 @@
 import { dummyPosts } from "@/app/data/dummyPosts";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import CommentSection from "@/app/components/CommentSection";
+import AnswersSection from "@/app/components/AnswersSection";
 import ScoreButton from "@/app/components/ScoreButton";
 import { isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
@@ -25,7 +25,7 @@ export default async function PostDetailPage({
 
       if (response.ok) {
         const data = await response.json();
-        post = { ...data, type: "creation" };
+        post = { ...data, itemType: "creation" };
         console.info(`[Post Detail] バックエンドから投稿 ID ${resolvedParams.id} を取得`);
       } else {
         // posts になければ questions を探す
@@ -35,7 +35,7 @@ export default async function PostDetailPage({
         );
         if (qResponse.ok) {
           const data = await qResponse.json();
-          post = { ...data, type: "question" };
+          post = { ...data, itemType: "question" };
           console.info(`[Post Detail] バックエンドから質問 ID ${resolvedParams.id} を取得`);
         }
       }
@@ -74,16 +74,16 @@ export default async function PostDetailPage({
             <figure className="w-full aspect-video bg-gray-100 relative m-0">
               <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
               <div className="absolute top-4 left-4">
-                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.type === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
-                  {post.type === 'creation' ? '制作物' : '質問'}
+                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
+                  {post.itemType === 'creation' ? '制作物' : '質問'}
                 </span>
               </div>
             </figure>
           ) : (
             /* 画像がない場合はタグだけを表示 */
             <div className="p-8 md:p-12 pb-0">
-              <span className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full ${post.type === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
-                {post.type === 'creation' ? '制作物' : '質問'}
+              <span className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
+                {post.itemType === 'creation' ? '制作物' : '質問'}
               </span>
             </div>
           )}
@@ -108,7 +108,7 @@ export default async function PostDetailPage({
                 </div>
                 
                 {/* 評価（スコア）ボタン：制作物の場合のみ表示 */}
-                {post.type === 'creation' && (
+                {post.itemType === 'creation' && (
                   <ScoreButton postId={post.id} initialScore={post.score} />
                 )}
               </div>
@@ -125,9 +125,9 @@ export default async function PostDetailPage({
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                {post.type === 'creation' ? 'コメント' : '回答'}
+                {post.itemType === 'creation' ? 'コメント' : '回答'}
               </h2>
-              <CommentSection postType={post.type} postId={post.id} />
+              <AnswersSection itemType={post.itemType} postId={post.id} />
             </section>
           </div>
         </article>

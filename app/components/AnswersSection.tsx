@@ -2,9 +2,9 @@
 import { useState, useEffect } from "react";
 import { fetchWithAuth, isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
-import CommentScoreButton from "./CommentScoreButton";
+import AnswersScoreButton from "./AnswersScoreButton";
 
-export type CommentData = {
+export type AnswerData = {
   id: string | number;
   content?: string;
   comment?: string;
@@ -16,38 +16,38 @@ export type CommentData = {
   score?: number;
 };
 
-export default function CommentSection({ 
-  postType,
+export default function AnswersSection({ 
+  itemType,
   postId,
   questionId
 }: { 
-  postType: "creation" | "question";
+  itemType: "creation" | "question";
   postId: string;
   questionId?: string;
 }) {
-  const [showComment, setShowComment] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [comments, setComments] = useState<CommentData[]>([]);
+  const [answers, setAnswers] = useState<AnswerData[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
 
   // 属性が質問の場合は「回答」、それ以外は「コメント」
-  const label = postType === "question" ? "回答" : "コメント";
+  const label = itemType === "question" ? "回答" : "コメント";
   const targetId = questionId ?? postId;
   
   // APIエンドポイントの定義
-  // 制作物: /comment, 質問: /answer
-  const getEndpoint = postType === "question" ? `/answer/question/${targetId}` : `/comment/post/${targetId}`;
-  const postEndpoint = postType === "question" ? `/answer` : `/comment`;
+  // 制作物: /comments, 質問: /answers
+  const getEndpoint = itemType === "question" ? `/answers/question/${targetId}` : `/comments/post/${targetId}`;
+  const postEndpoint = itemType === "question" ? `/answers` : `/comments`;
 
   useEffect(() => {
-    async function fetchComments() {
+    async function fetchAnswers() {
       if (!isUsingBackend()) {
         // ダミーデータ
-        if(postType === "question") {
-          setComments([
+        if(itemType === "question") {
+          setAnswers([
             {
               id: 1,
               answer: `これはダミーの${label}です。`,
@@ -65,7 +65,7 @@ export default function CommentSection({
           ]);
         }
         else {
-          setComments([
+          setAnswers([
             {
               id: 1,
               comment: `これはダミーの${label}です。`,
@@ -83,12 +83,12 @@ export default function CommentSection({
         const response = await fetchWithAuth(getEndpoint);
         if (response.ok) {
           const data = await response.json();
-          let fetchedComments = Array.isArray(data) ? data : (data.comments || data.answers || []);
+          let fetchedAnswers = Array.isArray(data) ? data : (data.comments || data.answers || []);
           
-          if (isUsingBackend() && postType === "question") {
-            fetchedComments = await Promise.all(fetchedComments.map(async (c: any) => {
+          if (isUsingBackend() && itemType === "question") {
+            fetchedAnswers = await Promise.all(fetchedAnswers.map(async (c: any) => {
               try {
-                const scoreRes = await fetchWithAuth(`/answer/score/${c.id}`);
+                const scoreRes = await fetchWithAuth(`/answers/scores/${c.id}`);
                 if (scoreRes.ok) {
                   const text = await scoreRes.text();
                   if (text) {
@@ -101,24 +101,24 @@ export default function CommentSection({
                   }
                 }
               } catch (e) {
-                console.error("[CommentSection] スコア取得エラー:", e);
+                console.error("[AnswersSection] スコア取得エラー:", e);
               }
               return { ...c, score: 0 };
             }));
           }
           
-          setComments(fetchedComments);
+          setAnswers(fetchedAnswers);
         } else {
-          console.warn(`[CommentSection] 取得に失敗しました: ${response.status}`);
+          console.warn(`[AnswersSection] 取得に失敗しました: ${response.status}`);
         }
       } catch (err) {
-        console.error(`[CommentSection] 取得エラー:`, err);
+        console.error(`[AnswersSection] 取得エラー:`, err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchComments();
+    fetchAnswers();
   }, [getEndpoint, label]);
 
   const handleSubmit = async () => {
@@ -126,15 +126,15 @@ export default function CommentSection({
 
     if (!isUsingBackend()) {
       // ダミー送信
-      const newComment: CommentData = {
+      const newAnswer: AnswerData = {
         id: Date.now().toString(),
         content: inputText,
         created_at: new Date().toISOString(),
         username: "あなた (ダミー)",
       };
-      setComments([...comments, newComment]);
+      setAnswers([...answers, newAnswer]);
       setInputText("");
-      setShowComment(false);
+      setShowAnswer(false);
       return;
     }
 
@@ -162,7 +162,7 @@ export default function CommentSection({
       // content -> comment
       // question_id -> questionid, post_id -> postid
       const payload = 
-      postType === "question" 
+      itemType === "question" 
         ? { 
           questionId: questionId ?? postId, 
           comment: inputText, 
@@ -182,45 +182,45 @@ export default function CommentSection({
         const data = await response.json();
         
         // 保存したコメントをそのままオブジェクトとして取得
-        const savedComment = data;
+        const savedAnswer = data;
         
         // 投稿直後はバックエンドからの返り値にユーザー名が含まれないことがあるため、
         // ログイン中のユーザー名を補完する
-        if (!savedComment.username && !savedComment.userid?.username && typeof window !== "undefined") {
-          savedComment.username = localStorage.getItem("user_name") || "あなた";
+        if (!savedAnswer.username && !savedAnswer.userid?.username && typeof window !== "undefined") {
+          savedAnswer.username = localStorage.getItem("user_name") || "あなた";
         }
 
-        setComments([...comments, savedComment]);
+        setAnswers([...answers, savedAnswer]);
         setInputText("");
-        setShowComment(false);
+        setShowAnswer(false);
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.message || `${label}の送信に失敗しました。`);
       }
     } catch (err) {
-      console.error(`[CommentSection] 送信エラー:`, err);
+      console.error(`[AnswersSection] 送信エラー:`, err);
       setError(`${label}の送信中にエラーが発生しました。`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // コメント本文を取得するヘルパー関数
+  // 本文を取得するヘルパー関数
   // バックエンドのレスポンス形式に応じてよしなに表示
-  const getDisplayContent = (c: CommentData) => {
+  const getDisplayContent = (c: AnswerData) => {
     return c.content || c.comment || c.answer || "";
   };
 
   // ユーザー名を取得するヘルパー関数
-  const getUsername = (c: CommentData) => {
+  const getUsername = (c: AnswerData) => {
     if (c.username) return c.username;
     if (c.userid && c.userid.username) return c.userid.username;
     if (c.user_id && c.user_id.username) return c.user_id.username;
     return "名無しユーザー";
   };
 
-  // コメントをソート
-  const sortedComments = [...comments].sort((a, b) => {
+  // ソート
+  const sortedAnswers = [...answers].sort((a, b) => {
     if (sortType === "newest") {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -244,17 +244,17 @@ export default function CommentSection({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <h3 className="text-lg font-bold flex items-center">
             <span className="bg-gray-100 text-gray-700 py-1 px-3 rounded-full text-sm mr-2 font-mono">
-              {comments.length}
+              {answers.length}
             </span>
             件の{label}
           </h3>
           
-          {comments.length > 0 && postType === "question" && (
+          {answers.length > 0 && itemType === "question" && (
             <div className="flex gap-4 text-sm bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
               <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
-                  name="commentSortOrder"
+                  name="answerSortOrder"
                   checked={sortType === "newest"}
                   onChange={() => setSortType("newest")}
                   className="accent-blue-600"
@@ -264,7 +264,7 @@ export default function CommentSection({
               <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
-                  name="commentSortOrder"
+                  name="answerSortOrder"
                   checked={sortType === "evaluation"}
                   onChange={() => setSortType("evaluation")}
                   className="accent-blue-600"
@@ -277,9 +277,9 @@ export default function CommentSection({
         
         {loading ? (
           <div className="text-gray-500 py-4 animate-pulse text-sm">読み込み中...</div>
-        ) : comments.length > 0 ? (
+        ) : answers.length > 0 ? (
           <ul className="space-y-4">
-            {sortedComments.map((c, index) => (
+            {sortedAnswers.map((c, index) => (
               <li key={c.id || index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-bold text-gray-800 flex items-center">
@@ -290,7 +290,7 @@ export default function CommentSection({
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
-                    {postType === "question" && <CommentScoreButton initialCount={c.score || 0} answerId={c.id} />}
+                    {itemType === "question" && <AnswersScoreButton initialCount={c.score || 0} answerId={c.id} />}
                   </div>
                 </div>
                 <div className="text-gray-700 whitespace-pre-wrap ml-11 leading-relaxed">
@@ -307,10 +307,10 @@ export default function CommentSection({
       </div>
 
       <button
-        onClick={() => setShowComment(!showComment)}
+        onClick={() => setShowAnswer(!showAnswer)}
         className="bg-gray-900 text-white px-5 py-2.5 rounded-xl shadow-sm hover:bg-gray-800 transition font-medium flex items-center focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
       >
-        {showComment ? (
+        {showAnswer ? (
           <>
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             キャンセル
@@ -324,7 +324,7 @@ export default function CommentSection({
       </button>
 
       {/* 入力欄（条件付き表示） */}
-      {showComment && (
+      {showAnswer && (
         <div className="mt-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-top-2">
           {error && <div className="mb-3 text-red-500 text-sm font-medium flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

@@ -27,7 +27,7 @@ const getCurrentUserId = () => {
   return currentUserId;
 };
 
-export default function CommentScoreButton({
+export default function AnswersScoreButton({
   initialCount = 0,
   answerId,
 }: ScoreButtonProps) {
@@ -39,7 +39,7 @@ export default function CommentScoreButton({
     async function fetchScore() {
       if (isUsingBackend() && answerId) {
         try {
-          const response = await fetchWithAuth(`/answer/score/${answerId}`);
+          const response = await fetchWithAuth(`/answers/scores/${answerId}`);
           if (response.ok) {
             const text = await response.text();
             if (text) {
@@ -61,7 +61,7 @@ export default function CommentScoreButton({
             }
           }
         } catch (e) {
-          console.error("[CommentScoreButton] Error fetching score:", e);
+          console.error("[AnswersScoreButton] Error fetching score:", e);
         }
       }
     }
@@ -81,8 +81,8 @@ export default function CommentScoreButton({
       if (isUsingBackend() && answerId) {
         const currentUserId = getCurrentUserId();
         // バックエンドとの通信
-        // POST /answer/score/:answerId/:userId (トグル処理)
-        const response = await fetchWithAuth(`/answer/score/${answerId}/${currentUserId}`, {
+        // POST /answers/scores/:answerId/:userId (トグル処理)
+        const response = await fetchWithAuth(`/answers/scores/${answerId}/${currentUserId}`, {
           method: "POST", // バックエンドの実装がPOSTでトグル処理を行うようになっているため
         });
 
@@ -90,10 +90,10 @@ export default function CommentScoreButton({
           throw new Error("評価の更新に失敗しました");
         }
       } else {
-        console.info(`[CommentScoreButton] ${newIsScored ? "評価しました" : "評価を取り消しました"} (Answer ID: ${answerId})`);
+        console.info(`[AnswersScoreButton] ${newIsScored ? "評価しました" : "評価を取り消しました"} (Answer ID: ${answerId})`);
       }
     } catch (error) {
-      console.error("[CommentScoreButton] エラー:", error);
+      console.error("[AnswersScoreButton] エラー:", error);
       // エラー時は元の状態に戻す
       setIsScored(!newIsScored);
       setCount(count);

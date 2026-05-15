@@ -94,7 +94,7 @@ export default function Page() {
             // postテーブルからの取得データは 'creation'
             postsData = arr.map((p: any) => ({
               ...p,
-              type: "creation",
+              itemType: "creation",
               tags: p.tags ?? extractTagNames(p.postTags),
             }));
           }
@@ -114,7 +114,7 @@ export default function Page() {
             // questionテーブルからの取得データは 'question'
             questionsData = arr.map((q: any) => ({
               ...q,
-              type: "question",
+              itemType: "question",
               tags: q.tags ?? extractTagNames(q.questionTags),
             }));
           }
@@ -187,7 +187,7 @@ export default function Page() {
 
   // フィルタリング（種別とキーワード）
   const filteredPosts = posts.filter((post) => {
-    const typeMatch = filterType === "all" || post.type === filterType;
+    const typeMatch = filterType === "all" || post.itemType === filterType;
     
     // キーワード検索（タイトルまたは本文に含まれるか）
     const keywordMatch = !keywordSearch || 
@@ -369,12 +369,12 @@ export default function Page() {
               <div className="p-6 flex flex-col flex-grow">
                 <div className="flex justify-between items-center mb-3">
                   {/* タグ */}
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.type === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                    {post.type === 'creation' ? '制作物' : '質問'}
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
+                    {post.itemType === 'creation' ? '制作物' : '質問'}
                   </span>
                   {/* 日付と評価 */}
                   <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                    {post.type === 'creation' && (
+                    {post.itemType === 'creation' && (
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
                         {post.score ?? 0}
