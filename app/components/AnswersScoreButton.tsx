@@ -39,7 +39,7 @@ export default function AnswersScoreButton({
     async function fetchScore() {
       if (isUsingBackend() && answerId) {
         try {
-          const response = await fetchWithAuth(`/answers/scores/${answerId}`);
+          const response = await fetchWithAuth(`/answer/score/${answerId}`);
           if (response.ok) {
             const text = await response.text();
             if (text) {
@@ -81,8 +81,8 @@ export default function AnswersScoreButton({
       if (isUsingBackend() && answerId) {
         const currentUserId = getCurrentUserId();
         // バックエンドとの通信
-        // POST /answers/scores/:answerId/:userId (トグル処理)
-        const response = await fetchWithAuth(`/answers/scores/${answerId}/${currentUserId}`, {
+        // POST /answer/score/:answerId/:userId (トグル処理)
+        const response = await fetchWithAuth(`/answer/score/${answerId}/${currentUserId}`, {
           method: "POST", // バックエンドの実装がPOSTでトグル処理を行うようになっているため
         });
 
