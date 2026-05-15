@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { fetchWithAuth, isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
-import CommentLikeButton from "./CommentLikeButton";
+import CommentScoreButton from "./CommentScoreButton";
 
 export type CommentData = {
   id: string | number;
@@ -290,7 +290,7 @@ export default function CommentSection({
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
-                    {postType === "question" && <CommentLikeButton initialCount={c.score || 0} answerId={c.id} />}
+                    {postType === "question" && <CommentScoreButton initialCount={c.score || 0} answerId={c.id} />}
                   </div>
                 </div>
                 <div className="text-gray-700 whitespace-pre-wrap ml-11 leading-relaxed">
