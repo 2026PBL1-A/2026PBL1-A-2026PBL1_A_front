@@ -13,6 +13,7 @@ export type CommentData = {
   user_id?: any;
   userid?: any;
   username?: string;
+  score?: number;
 };
 
 export default function CommentSection({ 
@@ -30,6 +31,7 @@ export default function CommentSection({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
 
   // 属性が質問の場合は「回答」、それ以外は「コメント」
   const label = postType === "question" ? "回答" : "コメント";
@@ -49,8 +51,16 @@ export default function CommentSection({
             {
               id: 1,
               answer: `これはダミーの${label}です。`,
-              created_at: new Date().toISOString(),
+              created_at: new Date(Date.now() - 3600000).toISOString(),
               username: "ダミーユーザー",
+              score: 2,
+            },
+            {
+              id: 2,
+              answer: `新着で高評価のダミー${label}です。`,
+              created_at: new Date().toISOString(),
+              username: "ダミーユーザー2",
+              score: 5,
             }
           ]);
         }
@@ -73,7 +83,31 @@ export default function CommentSection({
         const response = await fetchWithAuth(getEndpoint);
         if (response.ok) {
           const data = await response.json();
-          setComments(Array.isArray(data) ? data : (data.comments || data.answers || []));
+          let fetchedComments = Array.isArray(data) ? data : (data.comments || data.answers || []);
+          
+          if (isUsingBackend() && postType === "question") {
+            fetchedComments = await Promise.all(fetchedComments.map(async (c: any) => {
+              try {
+                const scoreRes = await fetchWithAuth(`/answer/score/${c.id}`);
+                if (scoreRes.ok) {
+                  const text = await scoreRes.text();
+                  if (text) {
+                    const scoreData = JSON.parse(text);
+                    let scoreCount = 0;
+                    if (typeof scoreData === 'number') scoreCount = scoreData;
+                    else if (Array.isArray(scoreData)) scoreCount = scoreData.length;
+                    else if (scoreData && typeof scoreData === 'object') scoreCount = 1;
+                    return { ...c, score: scoreCount };
+                  }
+                }
+              } catch (e) {
+                console.error("[CommentSection] スコア取得エラー:", e);
+              }
+              return { ...c, score: 0 };
+            }));
+          }
+          
+          setComments(fetchedComments);
         } else {
           console.warn(`[CommentSection] 取得に失敗しました: ${response.status}`);
         }
@@ -185,22 +219,67 @@ export default function CommentSection({
     return "名無しユーザー";
   };
 
+  // コメントをソート
+  const sortedComments = [...comments].sort((a, b) => {
+    if (sortType === "newest") {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    } else {
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    }
+  });
+
   return (
     <div className="mt-8 pt-4">
       {/* 既存のコメント/回答一覧 */}
       <div className="mb-8">
-        <h3 className="text-lg font-bold mb-4 flex items-center">
-          <span className="bg-gray-100 text-gray-700 py-1 px-3 rounded-full text-sm mr-2 font-mono">
-            {comments.length}
-          </span>
-          件の{label}
-        </h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h3 className="text-lg font-bold flex items-center">
+            <span className="bg-gray-100 text-gray-700 py-1 px-3 rounded-full text-sm mr-2 font-mono">
+              {comments.length}
+            </span>
+            件の{label}
+          </h3>
+          
+          {comments.length > 0 && postType === "question" && (
+            <div className="flex gap-4 text-sm bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name="commentSortOrder"
+                  checked={sortType === "newest"}
+                  onChange={() => setSortType("newest")}
+                  className="accent-blue-600"
+                />
+                <span className={sortType === "newest" ? "font-bold text-gray-800" : "text-gray-600"}>新着順</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name="commentSortOrder"
+                  checked={sortType === "evaluation"}
+                  onChange={() => setSortType("evaluation")}
+                  className="accent-blue-600"
+                />
+                <span className={sortType === "evaluation" ? "font-bold text-gray-800" : "text-gray-600"}>評価順</span>
+              </label>
+            </div>
+          )}
+        </div>
         
         {loading ? (
           <div className="text-gray-500 py-4 animate-pulse text-sm">読み込み中...</div>
         ) : comments.length > 0 ? (
           <ul className="space-y-4">
-            {comments.map((c, index) => (
+            {sortedComments.map((c, index) => (
               <li key={c.id || index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-bold text-gray-800 flex items-center">
@@ -211,7 +290,7 @@ export default function CommentSection({
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
-                    {c.answer && <CommentLikeButton initialCount={1} />}
+                    {postType === "question" && <CommentLikeButton initialCount={c.score || 0} answerId={c.id} />}
                   </div>
                 </div>
                 <div className="text-gray-700 whitespace-pre-wrap ml-11 leading-relaxed">
