@@ -38,9 +38,9 @@ export default function AnswersSection({
   const targetId = questionId ?? postId;
   
   // APIエンドポイントの定義
-  // 制作物: /comment, 質問: /answer
-  const getEndpoint = itemType === "question" ? `/answer/question/${targetId}` : `/comment/post/${targetId}`;
-  const postEndpoint = itemType === "question" ? `/answer` : `/comment`;
+  // 制作物: /comments, 質問: /answers
+  const getEndpoint = itemType === "question" ? `/answers/question/${targetId}` : `/comments/post/${targetId}`;
+  const postEndpoint = itemType === "question" ? `/answers` : `/comments`;
 
   useEffect(() => {
     async function fetchAnswers() {
@@ -88,7 +88,7 @@ export default function AnswersSection({
           if (isUsingBackend() && itemType === "question") {
             fetchedAnswers = await Promise.all(fetchedAnswers.map(async (c: any) => {
               try {
-                const scoreRes = await fetchWithAuth(`/answer/score/${c.id}`);
+                const scoreRes = await fetchWithAuth(`/answers/score/${c.id}`);
                 if (scoreRes.ok) {
                   const text = await scoreRes.text();
                   if (text) {

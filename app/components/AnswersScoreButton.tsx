@@ -39,7 +39,7 @@ export default function AnswersScoreButton({
     async function fetchScore() {
       if (isUsingBackend() && answerId) {
         try {
-          const response = await fetchWithAuth(`/answer/score/${answerId}`);
+          const response = await fetchWithAuth(`/answers/score/${answerId}`);
           if (response.ok) {
             const text = await response.text();
             if (text) {
@@ -51,7 +51,7 @@ export default function AnswersScoreButton({
               } else if (data && typeof data === 'object') {
                 // バックエンドが findOneBy を使っている場合、オブジェクトが返る
                 setCount(1);
-                
+
                 // 現在のユーザーが評価済みかどうかの判定（もしデータに userId が含まれていれば）
                 const currentUserId = getCurrentUserId();
                 if (data.userId && String(data.userId) === String(currentUserId)) {
@@ -82,7 +82,7 @@ export default function AnswersScoreButton({
         const currentUserId = getCurrentUserId();
         // バックエンドとの通信
         // POST /answer/score/:answerId/:userId (トグル処理)
-        const response = await fetchWithAuth(`/answer/score/${answerId}/${currentUserId}`, {
+        const response = await fetchWithAuth(`/answers/score/${answerId}/${currentUserId}`, {
           method: "POST", // バックエンドの実装がPOSTでトグル処理を行うようになっているため
         });
 
@@ -107,16 +107,14 @@ export default function AnswersScoreButton({
     <button
       onClick={handleScore}
       disabled={isLoading}
-      className={`group flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all shadow-sm border ${
-        isScored
-          ? "bg-pink-50 border-pink-200 text-pink-600"
-          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-pink-200 hover:text-pink-500"
-      } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`group flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all shadow-sm border ${isScored
+        ? "bg-pink-50 border-pink-200 text-pink-600"
+        : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-pink-200 hover:text-pink-500"
+        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <svg
-        className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-          isScored ? "fill-current" : "fill-none stroke-current stroke-2"
-        }`}
+        className={`w-6 h-6 transition-transform group-hover:scale-110 ${isScored ? "fill-current" : "fill-none stroke-current stroke-2"
+          }`}
         viewBox="0 0 24 24"
       >
         <path

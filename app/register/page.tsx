@@ -46,7 +46,7 @@ export default function RegisterPage() {
     setLoadingLabel("登録中...");
     try {
       // /api は next.config.ts の rewrite を通って http://localhost:5000/user へ転送される
-      const registerResponse = await fetch("/api/user", {
+      const registerResponse = await fetch("/api/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
