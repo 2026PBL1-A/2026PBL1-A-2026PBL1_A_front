@@ -204,13 +204,13 @@ export default function Page() {
       const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
       return dateB - dateA;
     } else {
-      // 評価順 (likes が多い順)
-      const likesA = a.score ?? 0;
-      const likesB = b.score ?? 0;
-      if (likesA !== likesB) {
-        return likesB - likesA;
+      // 評価順 (スコアが高い順)
+      const scoreA = a.score ?? 0;
+      const scoreB = b.score ?? 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
       }
-      // いいねが同じ場合は新しい順
+      // スコアが同じ場合は新しい順
       const dateA = a.created_at ? new Date(a.created_at).getTime() ?? 0 : 0;
       const dateB = b.created_at ? new Date(b.created_at)?.getTime() ?? 0 : 0;
       return dateB - dateA;

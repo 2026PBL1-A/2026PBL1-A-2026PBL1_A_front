@@ -107,7 +107,7 @@ export default function RegisterPage() {
 
       setPopup({ message: "登録とログインに成功しました", type: "success" });
       setTimeout(() => {
-        router.push("/itiran");
+        router.push("/list");
       }, 1200);
     } catch (error) {
       const message =

@@ -2,7 +2,7 @@ import { dummyPosts } from "@/app/data/dummyPosts";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CommentSection from "@/app/components/CommentSection";
-import LikeButton from "@/app/components/LikeButton";
+import ScoreButton from "@/app/components/ScoreButton";
 import { isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
 
@@ -61,7 +61,7 @@ export default async function PostDetailPage({
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="px-4 max-w-3xl mx-auto">
         <div className="mb-6">
-          <Link href="/itiran" className="text-gray-900 bg-white/80 backdrop-blur hover:bg-gray-200 inline-flex items-center justify-center w-10 h-10 rounded-full transition shadow-sm border border-gray-200">
+          <Link href="/list" className="text-gray-900 bg-white/80 backdrop-blur hover:bg-gray-200 inline-flex items-center justify-center w-10 h-10 rounded-full transition shadow-sm border border-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -107,9 +107,9 @@ export default async function PostDetailPage({
                   )}
                 </div>
                 
-                {/* 評価（いいね）ボタン：制作物の場合のみ表示 */}
+                {/* 評価（スコア）ボタン：制作物の場合のみ表示 */}
                 {post.type === 'creation' && (
-                  <LikeButton postId={post.id} initialLikes={post.score} />
+                  <ScoreButton postId={post.id} initialScore={post.score} />
                 )}
               </div>
             </header>

@@ -3,28 +3,28 @@
 import { useState, useEffect } from "react";
 import { isUsingBackend } from "@/lib/api";
 
-interface LikeButtonProps {
+interface ScoreButtonProps {
   postId: string;
-  initialLikes: number;
+  initialScore: number;
 }
 
-export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
-  const [likes, setLikes] = useState(initialLikes);
+export default function ScoreButton({ postId, initialScore }: ScoreButtonProps) {
+  const [score, setScore] = useState(initialScore);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setLikes(initialLikes);
-  }, [initialLikes]);
+    setScore(initialScore);
+  }, [initialScore]);
 
-  const [hasLiked, setHasLiked] = useState(() => {
+  const [isScored, setIsScored] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(`liked_${postId}`) === "true";
+      return localStorage.getItem(`scored_${postId}`) === "true";
     }
 
     return false;
   });
 
-  const handleLike = async () => {
+  const handleScore = async () => {
     setIsLoading(true);
 
     try {
@@ -46,9 +46,6 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        // バックエンドとの通信（仕様が決まるまでのダミーエンドポイント）
-        // ※バックエンドの仕様に合わせて変更してください（例: POST /api/posts/{id}/like）
-
         console.log("postId:", postId);
         console.log("token:", localStorage.getItem("access_token"));
 
@@ -69,9 +66,6 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
             localStorage.removeItem("user_name");
 
             alert("ログインの有効期限が切れています。再度ログインしてください。");
-
-            // 必要ならログイン画面へ遷移
-            // window.location.href = "/login";
           }
 
           throw new Error("評価の更新に失敗しました");
@@ -82,30 +76,30 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
         console.log("response data:", data);
 
         // サーバーから返ってきた最新値を反映
-        setHasLiked(data.liked);
-        setLikes(data.score);
+        setIsScored(data.liked);
+        setScore(data.score);
 
         localStorage.setItem(
-          `liked_${postId}`,
+          `scored_${postId}`,
           String(data.liked)
         );
       } else {
-        const newHasLiked = !hasLiked;
-        const newLikes = newHasLiked ? likes + 1 : likes - 1;
+        const newIsScored = !isScored;
+        const newScore = newIsScored ? score + 1 : score - 1;
 
-        setHasLiked(newHasLiked);
-        setLikes(Math.max(0, newLikes));
+        setIsScored(newIsScored);
+        setScore(Math.max(0, newScore));
 
         localStorage.setItem(
-          `liked_${postId}`,
-          String(newHasLiked)
+          `scored_${postId}`,
+          String(newIsScored)
         );
 
         // ローカルダミー環境の場合はコンソール出力のみ
-        console.info(`[LikeButton] ${newHasLiked ? "評価しました" : "評価を取り消しました"} (Post ID: ${postId})`);
+        console.info(`[ScoreButton] ${newIsScored ? "評価しました" : "評価を取り消しました"} (Post ID: ${postId})`);
       }
     } catch (error) {
-      console.error("[LikeButton] エラー:", error);
+      console.error("[ScoreButton] エラー:", error);
       alert("評価の更新に失敗しました。もう一度お試しください。");
     } finally {
       setIsLoading(false);
@@ -114,15 +108,15 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
 
   return (
     <button
-      onClick={handleLike}
+      onClick={handleScore}
       disabled={isLoading}
-      className={`group flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all shadow-sm border ${hasLiked
+      className={`group flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all shadow-sm border ${isScored
           ? "bg-pink-50 border-pink-200 text-pink-600"
           : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-pink-200 hover:text-pink-500"
         }`}
     >
       <svg
-        className={`w-6 h-6 transition-transform group-hover:scale-110 ${hasLiked ? "fill-current" : "fill-none stroke-current stroke-2"
+        className={`w-6 h-6 transition-transform group-hover:scale-110 ${isScored ? "fill-current" : "fill-none stroke-current stroke-2"
           }`}
         viewBox="0 0 24 24"
       >
@@ -132,7 +126,7 @@ export default function LikeButton({ postId, initialLikes }: LikeButtonProps) {
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
         />
       </svg>
-      <span className="text-lg">{likes}</span>
+      <span className="text-lg">{score}</span>
     </button>
   );
 }

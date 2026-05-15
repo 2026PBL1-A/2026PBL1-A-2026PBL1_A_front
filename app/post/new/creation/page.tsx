@@ -135,7 +135,7 @@ export default function CreateCreationPage() {
       } else {
         alert("投稿しました（ローカル）");
       }
-      router.push("/itiran");
+      router.push("/list");
     } catch (error) {
       const message = error instanceof Error ? error.message : "投稿に失敗しました";
       alert(message);
@@ -284,7 +284,7 @@ export default function CreateCreationPage() {
           <div className="flex gap-4 pt-2">
             <button
               type="button"
-              onClick={() => router.push("/itiran")}
+              onClick={() => router.push("/list")}
               disabled={isLoading}
               className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-400 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >

@@ -101,7 +101,7 @@ export default function LoginPage() {
       setPopup({ message: "ログインに成功しました", type: "success" });
       setTimeout(() => {
         // ログイン完了後に一覧ページへ移動
-        router.push("/itiran"); // ← 一覧画面へ
+        router.push("/list"); // ← 一覧画面へ
       }, 1500); // 1.5秒後に遷移
     } catch (error) {
       // fetch失敗 / 認証失敗 / 想定外エラーをここでまとめて扱う

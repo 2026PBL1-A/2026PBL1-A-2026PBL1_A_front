@@ -74,7 +74,7 @@ export default function CreatePostPage() {
       }
 
       // 投稿後に一覧へ遷移
-      router.push("/itiran");
+      router.push("/list");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "投稿に失敗しました";
@@ -176,7 +176,7 @@ export default function CreatePostPage() {
           <div className="flex gap-4 pt-2">
             <button
               type="button"
-              onClick={() => router.push("/itiran")}
+              onClick={() => router.push("/list")}
               disabled={isLoading}
               className="flex-1 bg-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
