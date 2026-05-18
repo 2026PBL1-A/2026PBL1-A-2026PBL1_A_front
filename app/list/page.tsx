@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { dummyPosts, Post } from "@/app/data/dummyPosts";
 import { isUsingBackend } from "@/lib/api";
-import { parseDateString, formatDate } from "@/lib/formatDate";
 
 export default function Page() {
   const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
@@ -20,6 +19,7 @@ export default function Page() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
+  const normalizedKeywordSearch = keywordSearch.trim();
 
   useEffect(() => {
     // ユーザー名を取得
@@ -39,10 +39,17 @@ export default function Page() {
           const token = localStorage.getItem("access_token");
           const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-          // タグ ID のクエリパラメータを構築（コンマ区切り）
-          const tagQuery = selectedTagIds.length > 0 ? `?tag_ids=${selectedTagIds.join(',')}` : '';
-          const postsUrl = `/api/posts${tagQuery}`;
-          const questionsUrl = `/api/questions${tagQuery}`;
+          const hasKeyword = normalizedKeywordSearch.length > 0;
+          const postsUrl = hasKeyword
+            ? `/api/posts/search?keyword=${encodeURIComponent(normalizedKeywordSearch)}`
+            : selectedTagIds.length > 0
+              ? `/api/posts?tag_ids=${selectedTagIds.join(",")}`
+              : "/api/posts";
+          const questionsUrl = hasKeyword
+            ? `/api/questions/search?keyword=${encodeURIComponent(normalizedKeywordSearch)}`
+            : selectedTagIds.length > 0
+              ? `/api/questions?tag_ids=${selectedTagIds.join(",")}`
+              : "/api/questions";
 
           // デバッグ用ログ
           /*
@@ -92,9 +99,9 @@ export default function Page() {
             */
 
             // postテーブルからの取得データは 'creation'
-            postsData = arr.map((p: any) => ({
+              postsData = arr.map((p: any) => ({
               ...p,
-              itemType: "creation",
+                itemType: "creation",
               tags: p.tags ?? extractTagNames(p.postTags),
             }));
           }
@@ -112,7 +119,7 @@ export default function Page() {
             */
            
             // questionテーブルからの取得データは 'question'
-            questionsData = arr.map((q: any) => ({
+              questionsData = arr.map((q: any) => ({
               ...q,
               itemType: "question",
               tags: q.tags ?? extractTagNames(q.questionTags),
@@ -146,7 +153,7 @@ export default function Page() {
     };
 
     fetchPosts();
-  }, [selectedTagIds, filterType]);
+  }, [selectedTagIds, filterType, normalizedKeywordSearch]);
 
   // 全タグを取得（初回マウント時のみ）
   useEffect(() => {
@@ -185,16 +192,28 @@ export default function Page() {
     setTagSearch(e.target.value);
   };
 
-  // フィルタリング（種別とキーワード）
-  const filteredPosts = posts.filter((post) => {
-    const typeMatch = filterType === "all" || post.itemType === filterType;
-    
-    // キーワード検索（タイトルまたは本文に含まれるか）
-    const keywordMatch = !keywordSearch || 
-      post.title.toLowerCase().includes(keywordSearch.toLowerCase()) || 
-      post.content.toLowerCase().includes(keywordSearch.toLowerCase());
+  // タグ検索で選択されたタグ名リスト
+  const selectedTagNames = selectedTagIds
+    .map((id) => allTags.find((tag) => tag.id === id)?.tag)
+    .filter((tag): tag is string => !!tag);
 
-    return typeMatch && keywordMatch;
+  // フィルタリング（種別とキーワードとタグ）
+  const filteredPosts = posts.filter((post) => {
+    const postType = (post as any).itemType ?? (post as any).type;
+    const typeMatch = filterType === "all" || postType === filterType;
+    
+    // タグマッチ: 選択されたタグがすべて post に含まれているか (AND条件)
+    const tagMatch = selectedTagNames.length === 0 || 
+      selectedTagNames.every((tag) => post.tags?.includes(tag));
+    
+    const keywordLower = normalizedKeywordSearch.toLowerCase();
+    const keywordMatch = !normalizedKeywordSearch || isUsingBackend()
+      ? true
+      : post.title.toLowerCase().includes(keywordLower) ||
+        post.content.toLowerCase().includes(keywordLower) ||
+        post.tags?.some((tag) => tag.toLowerCase().includes(keywordLower));
+
+    return typeMatch && tagMatch && keywordMatch;
   });
 
   // 投稿をソート
@@ -234,7 +253,7 @@ export default function Page() {
           <div className="relative">
             <input
               type="text"
-              placeholder="キーワードで検索 (タイトル・本文)"
+              placeholder="キーワードで検索 (タイトル・本文・タグ)"
               value={keywordSearch}
               onChange={(e) => setKeywordSearch(e.target.value)}
               className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -370,11 +389,11 @@ export default function Page() {
                 <div className="flex justify-between items-center mb-3">
                   {/* タグ */}
                   <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                    {post.itemType === 'creation' ? '制作物' : '質問'}
+                    {(post as any).itemType ?? (post as any).type === 'creation' ? '制作物' : '質問'}
                   </span>
                   {/* 日付と評価 */}
                   <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                    {post.itemType === 'creation' && (
+                    {((post as any).itemType ?? (post as any).type) === 'creation' && (
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
                         {post.score ?? 0}
