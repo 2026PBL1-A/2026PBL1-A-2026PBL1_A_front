@@ -20,6 +20,10 @@ export default function Page() {
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
   const normalizedKeywordSearch = keywordSearch.trim();
+  const keywordTerms = normalizedKeywordSearch
+    .split(/\s+/)
+    .map((term) => term.trim())
+    .filter(Boolean);
 
   useEffect(() => {
     // ユーザー名を取得
@@ -39,13 +43,13 @@ export default function Page() {
           const token = localStorage.getItem("access_token");
           const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-          const hasKeyword = normalizedKeywordSearch.length > 0;
-          const postsUrl = hasKeyword
+          const shouldUseServerSearch = keywordTerms.length === 1;
+          const postsUrl = shouldUseServerSearch
             ? `/api/posts/search?keyword=${encodeURIComponent(normalizedKeywordSearch)}`
             : selectedTagIds.length > 0
               ? `/api/posts?tag_ids=${selectedTagIds.join(",")}`
               : "/api/posts";
-          const questionsUrl = hasKeyword
+          const questionsUrl = shouldUseServerSearch
             ? `/api/questions/search?keyword=${encodeURIComponent(normalizedKeywordSearch)}`
             : selectedTagIds.length > 0
               ? `/api/questions?tag_ids=${selectedTagIds.join(",")}`
@@ -86,6 +90,19 @@ export default function Page() {
               .map((item) => item?.tag?.tag)
               .filter((tag): tag is string => typeof tag === "string" && tag.length > 0);
 
+          // API が検索条件に応じて tags を省略・縮約する場合があるため、
+          // 表示用は関連データから復元したタグを優先する。
+          const resolveDisplayTags = (item: any, relationKeys: string[]) => {
+            for (const key of relationKeys) {
+              const resolvedTags = extractTagNames(item?.[key]);
+              if (resolvedTags.length > 0) {
+                return resolvedTags;
+              }
+            }
+
+            return Array.isArray(item?.tags) ? item.tags : [];
+          };
+
           // postテーブルからの取得データは 'creation'
           let postsData: any[] = [];
           if (postsRes && postsRes.ok) {
@@ -102,7 +119,7 @@ export default function Page() {
               postsData = arr.map((p: any) => ({
               ...p,
                 itemType: "creation",
-              tags: p.tags ?? extractTagNames(p.postTags),
+              tags: resolveDisplayTags(p, ["postTags"]),
             }));
           }
 
@@ -122,7 +139,7 @@ export default function Page() {
               questionsData = arr.map((q: any) => ({
               ...q,
               itemType: "question",
-              tags: q.tags ?? extractTagNames(q.questionTags),
+              tags: resolveDisplayTags(q, ["questionTags"]),
             }));
           }
 
@@ -206,12 +223,16 @@ export default function Page() {
     const tagMatch = selectedTagNames.length === 0 || 
       selectedTagNames.every((tag) => post.tags?.includes(tag));
     
-    const keywordLower = normalizedKeywordSearch.toLowerCase();
-    const keywordMatch = !normalizedKeywordSearch || isUsingBackend()
-      ? true
-      : post.title.toLowerCase().includes(keywordLower) ||
-        post.content.toLowerCase().includes(keywordLower) ||
-        post.tags?.some((tag) => tag.toLowerCase().includes(keywordLower));
+    const keywordMatch =
+      keywordTerms.length === 0 ||
+      keywordTerms.every((term) => {
+        const keywordLower = term.toLowerCase();
+        return (
+          post.title.toLowerCase().includes(keywordLower) ||
+          post.content.toLowerCase().includes(keywordLower) ||
+          post.tags?.some((tag) => tag.toLowerCase().includes(keywordLower))
+        );
+      });
 
     return typeMatch && tagMatch && keywordMatch;
   });
