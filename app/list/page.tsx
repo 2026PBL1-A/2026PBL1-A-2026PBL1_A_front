@@ -409,8 +409,8 @@ export default function Page() {
               <div className="p-6 flex flex-col flex-grow">
                 <div className="flex justify-between items-center mb-3">
                   {/* タグ */}
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                    {(post as any).itemType ?? (post as any).type === 'creation' ? '制作物' : '質問'}
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${((post as any).itemType ?? (post as any).type) === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
+                    {((post as any).itemType ?? (post as any).type) === 'creation' ? '制作物' : '質問'}
                   </span>
                   {/* 日付と評価 */}
                   <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
