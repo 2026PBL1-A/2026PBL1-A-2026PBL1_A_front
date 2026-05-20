@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
-//import Image from "next/image";
+import Image from "next/image";
 
 export default function CreateQuestionPage() {
   const [title, setTitle] = useState("");
@@ -15,7 +15,9 @@ export default function CreateQuestionPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
-  // const [image, setImage] = useState<File | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [tempImage, setTempImage] = useState<File | null>(null);
   const presetTags = [
     "React",
     "Next.js",
@@ -249,30 +251,114 @@ export default function CreateQuestionPage() {
             />
           </div>
 
-          {/* 画像 (後で実装するためコメントアウト) */}
-          {/*
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              画像
-            </label>
-            <label className="inline-block px-4 py-2 bg-orange-500 text-white rounded cursor-pointer hover:bg-orange-600 transition">
-              📷 画像を選択
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    // setImage(e.target.files[0]);
-                  }
-                }}
-              />
-            </label>
-            {/* image && (
-              <Image src={URL.createObjectURL(image)} alt="preview" width={400} height={200} className="object-contain max-h-full max-w-full" />
-            ) *\/}
-          </div>
-          */}
+          {/* 画像 */}
+           <div className="space-y-3">
+             <label className="block text-sm font-medium text-gray-700">
+               画像
+             </label>
+ 
+             {/* 開くボタン */}
+             <button
+               type="button"
+               onClick={() => {
+                 setTempImage(image);
+                 setIsImageModalOpen(true);
+               }}
+               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+             >
+               📷 画像を選択
+             </button>
+ 
+             {/* 選択済み画像 */}
+             {image && (
+               <div className="mt-3">
+                 <Image
+                   src={URL.createObjectURL(image)}
+                   alt="preview"
+                   width={400}
+                   height={200}
+                   className="rounded-xl object-contain max-h-[300px] w-full border"
+                 />
+               </div>
+             )}
+           </div>
+
+            {/* 画像選択モーダル */}
+            {isImageModalOpen && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                
+                <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
+                  
+                  {/* ヘッダー */}
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold">
+                      画像を選択
+                    </h2>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsImageModalOpen(false)}
+                      className="text-gray-500 hover:text-black text-xl"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* ファイル選択 */}
+                  <label className="block">
+                    <div className="px-4 py-3 bg-gray-100 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition">
+                      画像をアップロード
+                    </div>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setTempImage(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  {/* プレビュー */}
+                  {tempImage && (
+                    <div className="mt-4">
+                      <Image
+                        src={URL.createObjectURL(tempImage)}
+                        alt="preview"
+                        width={400}
+                        height={200}
+                        className="rounded-xl object-contain max-h-[300px] w-full border"
+                      />
+                    </div>
+                  )}
+
+                  {/* ボタン */}
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setIsImageModalOpen(false)}
+                      className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                    >
+                      キャンセル
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImage(tempImage);
+                        setIsImageModalOpen(false);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                    >
+                      決定
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}         
 
           {/* 投稿・キャンセルボタン */}
           <div className="flex gap-4 pt-2">
