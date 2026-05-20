@@ -16,7 +16,6 @@ export default function CreateCreationPage() {
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [image, setImage] = useState<File | null>(null);
   
   const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
   const [headerImage, setHeaderImage] = useState<File | null>(null);
@@ -157,8 +156,8 @@ export default function CreateCreationPage() {
   const displayHeaderImage = headerImage || thumbnailImage;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center px-4">
-      <div className="w-full max-w-2xl bg-white/80 backdrop-blur-md shadow-xl rounded-2xl p-10 border border-gray-200">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl bg-white shadow-md rounded-xl p-8">
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           制作物を投稿
         </h1>
@@ -364,9 +363,7 @@ export default function CreateCreationPage() {
           {/* 画像選択モーダル */}
             {isImageModalOpen && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                
-                <div className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-xl">
-                  
+                <div className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
                   {/* ヘッダー */}
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold">
