@@ -134,6 +134,38 @@ export default function CreateQuestionPage() {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `投稿に失敗しました (${response.status})`);
         }
+
+        // 作成された投稿情報を取得
+        const createdPost = await response.json();
+
+        // 投稿IDを取得
+        const postId = createdPost.id;
+
+        const images = [
+          { file: thumbnailImage, order: 0 },
+          { file: headerImage, order: 1 },
+          { file: topImage, order: 2 },
+          { file: bottomImage, order: 3 },
+        ];
+
+        for (const img of images) {
+          if (!img.file) continue;
+
+          const formData = new FormData();
+          formData.append("file", img.file);
+
+          const uploadResponse = await fetch(
+            `/api/post-images/upload/${postId}`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          if (!uploadResponse.ok) {
+            throw new Error("画像アップロード失敗");
+          }
+        }
         alert("投稿しました");
       } else {
         alert("投稿しました（ローカル）");
