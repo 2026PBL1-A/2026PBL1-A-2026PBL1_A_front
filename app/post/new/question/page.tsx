@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
-//import Image from "next/image";
+import Image from "next/image";
 
 export default function CreateQuestionPage() {
   const [title, setTitle] = useState("");
@@ -15,7 +15,16 @@ export default function CreateQuestionPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
-  // const [image, setImage] = useState<File | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  
+  const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
+  const [headerImage, setHeaderImage] = useState<File | null>(null);
+  const [topImage, setTopImage] = useState<File | null>(null);
+  const [bottomImage, setBottomImage] = useState<File | null>(null);
+  const [tempThumbnailImage, setTempThumbnailImage] = useState<File | null>(null);
+  const [tempHeaderImage, setTempHeaderImage] = useState<File | null>(null);
+  const [tempTopImage, setTempTopImage] = useState<File | null>(null);
+  const [tempBottomImage, setTempBottomImage] = useState<File | null>(null);
   const presetTags = [
     "React",
     "Next.js",
@@ -138,6 +147,8 @@ export default function CreateQuestionPage() {
     }
   };
 
+  const displayHeaderImage = headerImage || thumbnailImage;
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-2xl bg-white shadow-md rounded-xl p-8">
@@ -249,30 +260,340 @@ export default function CreateQuestionPage() {
             />
           </div>
 
-          {/* 画像 (後で実装するためコメントアウト) */}
-          {/*
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              画像
-            </label>
-            <label className="inline-block px-4 py-2 bg-orange-500 text-white rounded cursor-pointer hover:bg-orange-600 transition">
-              📷 画像を選択
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    // setImage(e.target.files[0]);
-                  }
-                }}
-              />
-            </label>
-            {/* image && (
-              <Image src={URL.createObjectURL(image)} alt="preview" width={400} height={200} className="object-contain max-h-full max-w-full" />
-            ) *\/}
-          </div>
-          */}
+          {/* 画像 */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        画像
+                      </label>
+          
+                      {/* 開くボタン */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempThumbnailImage(thumbnailImage);
+                          setTempHeaderImage(headerImage);
+                          setTempTopImage(topImage);
+                          setTempBottomImage(bottomImage);
+                          setIsImageModalOpen(true);
+                        }}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                      >
+                        📷 画像を選択
+                      </button>
+          
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+          
+                        {/* サムネイル */}
+                        {thumbnailImage && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 text-gray-600">
+                              サムネイル
+                            </p>
+          
+                            <Image
+                              src={URL.createObjectURL(thumbnailImage)}
+                              alt="thumbnail"
+                              width={400}
+                              height={200}
+                              className="rounded-xl border w-full h-auto object-contain"
+                            />
+                          </div>
+                        )}
+          
+                        {/* ヘッダー */}
+                        {displayHeaderImage && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 text-gray-600">
+                              ヘッダー
+                            </p>
+          
+                            <Image
+                              src={URL.createObjectURL(displayHeaderImage)}
+                              alt="header"
+                              width={400}
+                              height={200}
+                              className="rounded-xl border w-full h-auto object-contain"
+                            />
+                          </div>
+                        )}
+          
+                        {/* 本文上部 */}
+                        {topImage && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 text-gray-600">
+                              本文上部
+                            </p>
+          
+                            <Image
+                              src={URL.createObjectURL(topImage)}
+                              alt="top"
+                              width={400}
+                              height={200}
+                              className="rounded-xl border w-full h-auto object-contain"
+                            />
+                          </div>
+                        )}
+          
+                        {/* 本文下部 */}
+                        {bottomImage && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 text-gray-600">
+                              本文下部
+                            </p>
+          
+                            <Image
+                              src={URL.createObjectURL(bottomImage)}
+                              alt="bottom"
+                              width={400}
+                              height={200}
+                              className="rounded-xl border w-full h-auto object-contain"
+                            />
+                          </div>
+                        )}
+          
+                      </div>
+                    </div>
+          
+                    {/* 画像選択モーダル */}
+                      {isImageModalOpen && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                          
+                          <div className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+                            
+                            {/* ヘッダー */}
+                            <div className="flex justify-between items-center mb-4">
+                              <h2 className="text-lg font-bold">
+                                画像を選択
+                              </h2>
+          
+                              <button
+                                type="button"
+                                onClick={() => setIsImageModalOpen(false)}
+                                className="text-gray-500 hover:text-black text-xl"
+                              >
+                                ×
+                              </button>
+                            </div>
+          
+                            <div className="space-y-4">
+          
+                            {/* サムネイル */}
+                            <div>
+                              <p className="text-sm font-medium mb-2">
+                                サムネイル
+                              </p>
+          
+                              <div className="border rounded-xl p-4 bg-gray-50">
+                                <p className="text-sm font-semibold mb-3 text-gray-700">
+                                  サムネイル
+                                </p>
+          
+                                <label className="flex items-center justify-center w-full px-4 py-3 bg-blue-500 text-white rounded-xl cursor-pointer hover:bg-blue-600 transition shadow-sm">
+                                  📷 サムネイル画像を選択
+          
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        setTempThumbnailImage(e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
+          
+                                {tempThumbnailImage && (
+                                  <p className="mt-2 text-sm text-green-600">
+                                    ✅ {tempThumbnailImage.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+          
+                            {/* ヘッダー */}
+                            <div>
+                              <p className="text-sm font-medium mb-2">
+                                ヘッダー
+                              </p>
+          
+                              <div className="border rounded-xl p-4 bg-gray-50">
+                                <p className="text-sm font-semibold mb-3 text-gray-700">
+                                  ヘッダー
+                                </p>
+          
+                                <label className="flex items-center justify-center w-full px-4 py-3 bg-purple-500 text-white rounded-xl cursor-pointer hover:bg-purple-600 transition shadow-sm">
+                                  🖼 ヘッダー画像を選択
+          
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        setTempHeaderImage(e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
+          
+                                {tempHeaderImage && (
+                                  <p className="mt-2 text-sm text-green-600">
+                                    ✅ {tempHeaderImage.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+          
+                            {/* 本文上部 */}
+                            <div>
+                              <p className="text-sm font-medium mb-2">
+                                本文上部
+                              </p>
+          
+                              <div className="border rounded-xl p-4 bg-gray-50">
+                                <p className="text-sm font-semibold mb-3 text-gray-700">
+                                  本文上部
+                                </p>
+          
+                                <label className="flex items-center justify-center w-full px-4 py-3 bg-orange-500 text-white rounded-xl cursor-pointer hover:bg-orange-600 transition shadow-sm">
+                                  ⬆ 本文上部画像を選択
+          
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        setTempTopImage(e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
+          
+                                {tempTopImage && (
+                                  <p className="mt-2 text-sm text-green-600">
+                                    ✅ {tempTopImage.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+          
+                            {/* 本文下部 */}
+                            <div>
+                              <p className="text-sm font-medium mb-2">
+                                本文下部
+                              </p>
+          
+                              <div className="border rounded-xl p-4 bg-gray-50">
+                                <p className="text-sm font-semibold mb-3 text-gray-700">
+                                  本文下部
+                                </p>
+          
+                                <label className="flex items-center justify-center w-full px-4 py-3 bg-green-500 text-white rounded-xl cursor-pointer hover:bg-green-600 transition shadow-sm">
+                                  ⬇ 本文下部画像を選択
+          
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        setTempBottomImage(e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
+          
+                                {tempBottomImage && (
+                                  <p className="mt-2 text-sm text-green-600">
+                                    ✅ {tempBottomImage.name}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+          
+                          </div>
+          
+                            
+          
+                            {/* ボタン */}
+                            <div className="flex gap-3 mt-6">
+                              <button
+                                type="button"
+                                onClick={() => setIsImageModalOpen(false)}
+                                className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                              >
+                                キャンセル
+                              </button>
+          
+                              <button
+                                type="button"
+                                  onClick={() => {
+                                    setThumbnailImage(tempThumbnailImage);
+                                    setHeaderImage(tempHeaderImage);
+                                    setTopImage(tempTopImage);
+                                    setBottomImage(tempBottomImage);
+          
+                                    setIsImageModalOpen(false);
+                                  }}
+                                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                                >
+                                決定
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+          
+                      <div className="mt-10 bg-white rounded-2xl shadow border">
+          
+                      <div className="p-6">
+                        
+          
+                        {/* ヘッダー */}
+                        {displayHeaderImage && (
+                          <Image
+                            src={URL.createObjectURL(displayHeaderImage)}
+                            alt="header"
+                            width={400}
+                            height={200}
+                            className="rounded-xl border w-full max-h-[150px] object-cover mb-6"
+                          />
+                        )}
+          
+                        <h1 className="text-3xl font-bold mb-4 break-words">
+                          {title || "タイトルプレビュー"}
+                        </h1>
+          
+                        {/* 本文上部 */}
+                        {topImage && (
+                          <Image
+                            src={URL.createObjectURL(topImage)}
+                            alt="top"
+                            width={400}
+                            height={200}
+                            className="rounded-xl border w-full max-h-[350px] object-contain"
+                          />
+                        )}
+          
+                        <p className="text-gray-700 whitespace-pre-wrap break-words leading-8">
+                          {content || "本文プレビュー"}
+                        </p>
+          
+                        {/* 本文下部 */}
+                        {bottomImage && (
+                          <Image
+                            src={URL.createObjectURL(bottomImage)}
+                            alt="bottom"
+                            width={400}
+                            height={200}
+                            className="rounded-xl border w-full max-h-[350px] object-contain"
+                          />
+                        )}
+          
+                      </div>
+                    </div>     
 
           {/* 投稿・キャンセルボタン */}
           <div className="flex gap-4 pt-2">
