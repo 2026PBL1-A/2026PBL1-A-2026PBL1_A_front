@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AnswersSection from "@/app/components/AnswersSection";
 import ScoreButton from "@/app/components/ScoreButton";
+import PostEditButton from "@/app/components/PostEditButton";
 import { isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
 
@@ -105,6 +106,7 @@ export default async function PostDetailPage({
                       </time>
                     </div>
                   )}
+                  <PostEditButton post={post} />
                 </div>
                 
                 {/* 評価（スコア）ボタン：制作物の場合のみ表示 */}
