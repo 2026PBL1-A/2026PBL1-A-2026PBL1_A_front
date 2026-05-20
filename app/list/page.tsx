@@ -116,9 +116,9 @@ export default function Page() {
             */
 
             // postテーブルからの取得データは 'creation'
-              postsData = arr.map((p: any) => ({
+            postsData = arr.map((p: any) => ({
               ...p,
-                itemType: "creation",
+              itemType: "creation",
               tags: resolveDisplayTags(p, ["postTags"]),
             }));
           }
@@ -134,9 +134,9 @@ export default function Page() {
             console.log("[DEBUG] Questions response:", data);
             console.log("[DEBUG] Questions array length:", arr.length);
             */
-           
+
             // questionテーブルからの取得データは 'question'
-              questionsData = arr.map((q: any) => ({
+            questionsData = arr.map((q: any) => ({
               ...q,
               itemType: "question",
               tags: resolveDisplayTags(q, ["questionTags"]),
@@ -179,7 +179,7 @@ export default function Page() {
         if (isUsingBackend()) {
           const token = localStorage.getItem("access_token");
           const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-          
+
           const res = await fetch("/api/tags", { headers });
           if (res.ok) {
             const tags = await res.json();
@@ -191,18 +191,18 @@ export default function Page() {
         console.error("[Tags] 取得エラー:", err);
       }
     };
-    
+
     fetchAllTags();
   }, []);
 
   // タグの選択・解除関数
-      const toggleTag = (tag: string) => {
-        setTempSelectedTagNames((prev) =>
-          prev.includes(tag)
-            ? prev.filter((t) => t !== tag)
-            : [...prev, tag]
-        );
-      };
+  const toggleTag = (tag: string) => {
+    setTempSelectedTagNames((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   // タグ検索
   const handleTagSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,11 +218,11 @@ export default function Page() {
   const filteredPosts = posts.filter((post) => {
     const postType = (post as any).itemType ?? (post as any).type;
     const typeMatch = filterType === "all" || postType === filterType;
-    
+
     // タグマッチ: 選択されたタグがすべて post に含まれているか (AND条件)
-    const tagMatch = selectedTagNames.length === 0 || 
+    const tagMatch = selectedTagNames.length === 0 ||
       selectedTagNames.every((tag) => post.tags?.includes(tag));
-    
+
     const keywordMatch =
       keywordTerms.length === 0 ||
       keywordTerms.every((term) => {
@@ -289,85 +289,82 @@ export default function Page() {
 
         {/* フィルタボタン */}
         {/* 上部操作エリア */}
-          <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
 
-            {/* 左：タグ検索 */}
-            <button
-              onClick={() => {
-                // 選択中のタグ ID からタグ名に変換
-                const tagNames = selectedTagIds
-                  .map(id => allTags.find(tag => tag.id === id)?.tag)
-                  .filter((tag): tag is string => !!tag);
-                setTempSelectedTagNames(tagNames);
-                setIsTagModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200"
+          {/* 左：タグ検索 */}
+          <button
+            onClick={() => {
+              // 選択中のタグ ID からタグ名に変換
+              const tagNames = selectedTagIds
+                .map(id => allTags.find(tag => tag.id === id)?.tag)
+                .filter((tag): tag is string => !!tag);
+              setTempSelectedTagNames(tagNames);
+              setIsTagModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-200"
+          >
+            {/* 虫眼鏡 */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 text-gray-500 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              {/* 虫眼鏡 */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-gray-500 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
 
-              <span className="font-medium text-gray-700 whitespace-nowrap">
-                タグ検索
+            <span className="font-medium text-gray-700 whitespace-nowrap">
+              タグ検索
+            </span>
+
+            {selectedTagIds.length > 0 && (
+              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                {selectedTagIds.length}
               </span>
+            )}
+          </button>
 
-              {selectedTagIds.length > 0 && (
-                <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-                  {selectedTagIds.length}
-                </span>
-              )}
+          {/* 右：フィルタボタン */}
+          <div className="flex gap-2">
+
+            <button
+              onClick={() => setFilterType("all")}
+              className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "all"
+                  ? "bg-gray-800 text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                }`}
+            >
+              全部表示
             </button>
 
-            {/* 右：フィルタボタン */}
-            <div className="flex gap-2">
-              
-              <button
-                onClick={() => setFilterType("all")}
-                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-                  filterType === "all"
-                    ? "bg-gray-800 text-white"
-                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            <button
+              onClick={() => setFilterType("creation")}
+              className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "creation"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
-              >
-                全部表示
-              </button>
+            >
+              制作物
+            </button>
 
-              <button
-                onClick={() => setFilterType("creation")}
-                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-                  filterType === "creation"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            <button
+              onClick={() => setFilterType("question")}
+              className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "question"
+                  ? "bg-orange-500 text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
-              >
-                制作物
-              </button>
+            >
+              質問
+            </button>
 
-              <button
-                onClick={() => setFilterType("question")}
-                className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${
-                  filterType === "question"
-                    ? "bg-orange-500 text-white"
-                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                }`}
-              >
-                質問
-              </button>
-
-            </div>
-</div>
+          </div>
+        </div>
 
         {/* ソートボタン */}
         <div className="flex gap-4 mb-6 text-sm">
@@ -405,6 +402,12 @@ export default function Page() {
 
           {sortedPosts.map((post) => (
             <Link href={`/post/${post.id}`} key={post.id} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+              {/* サムネイル画像エリア */}
+              {post.imageUrl && (
+                <div className="w-full h-48 bg-gray-100 overflow-hidden shrink-0">
+                  <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+              )}
               {/* コンテンツエリア */}
               <div className="p-6 flex flex-col flex-grow">
                 <div className="flex justify-between items-center mb-3">
@@ -479,9 +482,9 @@ export default function Page() {
       {/* タグモーダル*/}
       {isTagModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          
+
           <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
-            
+
             {/* ヘッダー */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
@@ -501,7 +504,7 @@ export default function Page() {
 
             {/* 選択中タグ */}
             <div className="flex items-center justify-between mb-4">
-              
+
               <div className="flex gap-2 flex-wrap">
                 {tempSelectedTagNames.map((tag) => (
                   <button
@@ -524,53 +527,52 @@ export default function Page() {
             </div>
 
             {/* タグ候補 */}
-                <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
-                  {allTags
-                    .filter((tag) =>
-                      tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
-                    )
-                    .map((tag) => (
-                      <button
-                        key={tag.id}
-                        onClick={() => toggleTag(tag.tag)}
-                        className={`px-3 py-1 rounded-full text-sm transition ${
-                          tempSelectedTagNames.includes(tag.tag)
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-100 hover:bg-gray-200"
-                        }`}
-                      >
-                        #{tag.tag}
-                      </button>
-                    ))}
-                </div>
-
-                {/* ボタンエリア */}
-                <div className="flex justify-end gap-3">
-                  
+            <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
+              {allTags
+                .filter((tag) =>
+                  tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
+                )
+                .map((tag) => (
                   <button
-                    onClick={() => setIsTagModalOpen(false)}
-                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.tag)}
+                    className={`px-3 py-1 rounded-full text-sm transition ${tempSelectedTagNames.includes(tag.tag)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 hover:bg-gray-200"
+                      }`}
                   >
-                    キャンセル
+                    #{tag.tag}
                   </button>
-
-                  <button
-                    onClick={() => {
-                      // 選択したタグ名からタグ ID に変換
-                      const tagIds = tempSelectedTagNames
-                        .map(name => allTags.find(tag => tag.tag === name)?.id)
-                        .filter((id): id is string => !!id);
-                      setSelectedTagIds(tagIds);
-                      setIsTagModalOpen(false);
-                    }}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                  >
-                    決定
-                  </button>
-                </div>
-              </div>
+                ))}
             </div>
+
+            {/* ボタンエリア */}
+            <div className="flex justify-end gap-3">
+
+              <button
+                onClick={() => setIsTagModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+              >
+                キャンセル
+              </button>
+
+              <button
+                onClick={() => {
+                  // 選択したタグ名からタグ ID に変換
+                  const tagIds = tempSelectedTagNames
+                    .map(name => allTags.find(tag => tag.tag === name)?.id)
+                    .filter((id): id is string => !!id);
+                  setSelectedTagIds(tagIds);
+                  setIsTagModalOpen(false);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              >
+                決定
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      </div>
+    </div>
   );
 }
