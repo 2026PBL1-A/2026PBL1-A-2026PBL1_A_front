@@ -297,6 +297,7 @@ export default function AnswersSection({
       }));
 
       setEditingAnswer(null);
+      alert("編集が完了しました");
     } catch (err) {
       console.error(`[AnswersSection] 編集エラー:`, err);
       setEditError(`${label}の編集に失敗しました。`);

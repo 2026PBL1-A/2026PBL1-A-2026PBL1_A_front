@@ -146,6 +146,7 @@ export default function PostEditButton({ post }: { post: any }) {
 
       // 成功したらモーダルを閉じてページをリロード（または遷移）して最新情報を取得
       setIsOpen(false);
+      alert("編集が完了しました");
       router.refresh();
       
     } catch (err: any) {
