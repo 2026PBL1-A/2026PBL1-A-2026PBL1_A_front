@@ -12,6 +12,7 @@ export type AnswerData = {
   created_at: string;
   user_id?: any;
   userid?: any;
+  userId?: any;
   username?: string;
   score?: number;
 };
@@ -32,6 +33,16 @@ export default function AnswersSection({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortType, setSortType] = useState<"newest" | "evaluation">("newest");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // 編集用のステート
+  const [editingAnswer, setEditingAnswer] = useState<AnswerData | null>(null);
+  const [editInputText, setEditInputText] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // ドロップダウンメニュー開閉用のステート
+  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
 
   // 属性が質問の場合は「回答」、それ以外は「コメント」
   const label = itemType === "question" ? "回答" : "コメント";
@@ -41,6 +52,24 @@ export default function AnswersSection({
   // 制作物: /comments, 質問: /answers
   const getEndpoint = itemType === "question" ? `/answers/question/${targetId}` : `/comments/post/${targetId}`;
   const postEndpoint = itemType === "question" ? `/answers` : `/comments`;
+
+  useEffect(() => {
+    // ログインユーザーのIDを取得
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(window.atob(base64));
+          const id = payload.sub || payload.id || payload.userId;
+          if (id) setCurrentUserId(String(id));
+        } catch (e) {
+          console.error("Token decode error:", e);
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchAnswers() {
@@ -141,22 +170,7 @@ export default function AnswersSection({
     setSubmitting(true);
     setError(null);
     try {
-      // JWTトークンからユーザーIDを取り出す処理
-      let currentUserId = "1"; // デフォルト
-      if (typeof window !== "undefined") {
-        const token = localStorage.getItem("access_token");
-        if (token) {
-          try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(window.atob(base64));
-            // NestJSの一般的なJWT payload (sub または id)
-            currentUserId = payload.sub || payload.id || payload.userId || "1";
-          } catch (e) {
-            console.error("Token decode error:", e);
-          }
-        }
-      }
+      const userIdToUse = currentUserId || "1";
 
       // バックエンドのDTO（CreateAnswerDto / CreateCommentDto）に合わせてプロパティ名を変更
       // content -> comment
@@ -166,11 +180,11 @@ export default function AnswersSection({
         ? { 
           questionId: questionId ?? postId, 
           comment: inputText, 
-          userId: currentUserId }
+          userId: userIdToUse }
         : { 
           postId: postId, 
           comment: inputText, 
-          userId: currentUserId 
+          userId: userIdToUse 
         };
         
       const response = await fetchWithAuth(postEndpoint, {
@@ -186,7 +200,7 @@ export default function AnswersSection({
         
         // 投稿直後はバックエンドからの返り値にユーザー名が含まれないことがあるため、
         // ログイン中のユーザー名を補完する
-        if (!savedAnswer.username && !savedAnswer.userid?.username && typeof window !== "undefined") {
+        if (!savedAnswer.username && !savedAnswer.userId?.username && !savedAnswer.userid?.username && typeof window !== "undefined") {
           savedAnswer.username = localStorage.getItem("user_name") || "あなた";
         }
 
@@ -211,9 +225,76 @@ export default function AnswersSection({
     return c.content || c.comment || c.answer || "";
   };
 
+  // 自分のコメントかどうか判定するヘルパー関数
+  const isMyComment = (c: AnswerData) => {
+    if (!currentUserId) return false;
+    const commentUserId = c.userId?.id ?? c.userId ?? c.userid?.id ?? c.userid ?? c.user_id?.id ?? c.user_id;
+    return String(commentUserId) === String(currentUserId);
+  };
+
+  // 編集送信の処理
+  const handleEditSubmit = async () => {
+    if (!editingAnswer || !editInputText.trim()) return;
+
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      if (isUsingBackend()) {
+        if (itemType === "creation") {
+          // コメントの編集APIとの疎通
+          const editEndpoint = `/comments/update/${editingAnswer.id}`;
+          
+          const response = await fetchWithAuth(editEndpoint, {
+            method: "PATCH",
+            body: JSON.stringify({ 
+              comment: editInputText,
+              postId: postId,
+              userId: currentUserId || "1"
+            }), 
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "編集に失敗しました");
+          }
+        } else {
+          // TODO: 回答の編集APIが実装されたらここに追加する
+          // const editEndpoint = `/answers/update/${editingAnswer.id}`;
+          // ...
+        }
+      }
+
+      // API通信成功（またはAPI未使用/未実装）後、フロント側の状態を更新する
+      setAnswers(prevAnswers => prevAnswers.map(ans => {
+        if (ans.id === editingAnswer.id) {
+          // 元のデータ構造を維持しつつ、テキスト部分を更新
+          const updated = { ...ans };
+          if (updated.content !== undefined) updated.content = editInputText;
+          if (updated.comment !== undefined) updated.comment = editInputText;
+          if (updated.answer !== undefined) updated.answer = editInputText;
+          // どれにも該当しない場合は新しくプロパティをセットしないが、念のため
+          if (updated.content === undefined && updated.comment === undefined && updated.answer === undefined) {
+             updated.comment = editInputText;
+          }
+          return updated;
+        }
+        return ans;
+      }));
+
+      setEditingAnswer(null);
+    } catch (err) {
+      console.error(`[AnswersSection] 編集エラー:`, err);
+      setEditError(`${label}の編集に失敗しました。`);
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   // ユーザー名を取得するヘルパー関数
   const getUsername = (c: AnswerData) => {
     if (c.username) return c.username;
+    if (c.userId && c.userId.username) return c.userId.username;
     if (c.userid && c.userid.username) return c.userid.username;
     if (c.user_id && c.user_id.username) return c.user_id.username;
     return "名無しユーザー";
@@ -291,6 +372,46 @@ export default function AnswersSection({
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
                     {itemType === "question" && <AnswersScoreButton initialCount={c.score || 0} answerId={c.id} />}
+                    {isMyComment(c) && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition focus:outline-none"
+                          aria-label="メニューを開く"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                          </svg>
+                        </button>
+                        
+                        {openMenuId === c.id && (
+                          <>
+                            {/* バックドロップ：画面全体を覆い、クリックでメニューを閉じる */}
+                            <div 
+                              className="fixed inset-0 z-10"
+                              onClick={() => setOpenMenuId(null)}
+                            ></div>
+                            
+                            {/* ドロップダウンメニュー */}
+                            <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-100">
+                              <button
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setEditingAnswer(c);
+                                  setEditInputText(getDisplayContent(c));
+                                  setEditError(null);
+                                }}
+                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition flex items-center font-medium"
+                              >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                編集
+                              </button>
+                              {/* TODO: ここに削除ボタンを追加する */}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-gray-700 whitespace-pre-wrap ml-11 leading-relaxed">
@@ -351,6 +472,49 @@ export default function AnswersSection({
                 </>
               ) : "送信する"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 編集モーダル */}
+      {editingAnswer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold mb-4">{label}の編集</h3>
+            {editError && (
+              <div className="mb-3 text-red-500 text-sm font-medium flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                {editError}
+              </div>
+            )}
+            <textarea
+              value={editInputText}
+              onChange={(e) => setEditInputText(e.target.value)}
+              rows={5}
+              className="border border-gray-200 bg-gray-50 p-4 w-full mb-5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent resize-y transition-colors"
+              disabled={editSubmitting}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setEditingAnswer(null)}
+                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 font-medium rounded-xl transition"
+                disabled={editSubmitting}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                disabled={editSubmitting || !editInputText.trim()}
+                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm flex items-center"
+              >
+                {editSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    保存中...
+                  </>
+                ) : "保存する"}
+              </button>
+            </div>
           </div>
         </div>
       )}
