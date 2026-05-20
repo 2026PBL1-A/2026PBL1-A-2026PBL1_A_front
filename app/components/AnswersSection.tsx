@@ -17,11 +17,11 @@ export type AnswerData = {
   score?: number;
 };
 
-export default function AnswersSection({ 
+export default function AnswersSection({
   itemType,
   postId,
   questionId
-}: { 
+}: {
   itemType: "creation" | "question";
   postId: string;
   questionId?: string;
@@ -47,7 +47,7 @@ export default function AnswersSection({
   // 属性が質問の場合は「回答」、それ以外は「コメント」
   const label = itemType === "question" ? "回答" : "コメント";
   const targetId = questionId ?? postId;
-  
+
   // APIエンドポイントの定義
   // 制作物: /comments, 質問: /answers
   const getEndpoint = itemType === "question" ? `/answers/question/${targetId}` : `/comments/post/${targetId}`;
@@ -75,7 +75,7 @@ export default function AnswersSection({
     async function fetchAnswers() {
       if (!isUsingBackend()) {
         // ダミーデータ
-        if(itemType === "question") {
+        if (itemType === "question") {
           setAnswers([
             {
               id: 1,
@@ -103,7 +103,7 @@ export default function AnswersSection({
             }
           ]);
         }
-        
+
         return;
       }
 
@@ -113,7 +113,7 @@ export default function AnswersSection({
         if (response.ok) {
           const data = await response.json();
           let fetchedAnswers = Array.isArray(data) ? data : (data.comments || data.answers || []);
-          
+
           if (isUsingBackend() && itemType === "question") {
             fetchedAnswers = await Promise.all(fetchedAnswers.map(async (c: any) => {
               try {
@@ -135,7 +135,7 @@ export default function AnswersSection({
               return { ...c, score: 0 };
             }));
           }
-          
+
           setAnswers(fetchedAnswers);
         } else {
           console.warn(`[AnswersSection] 取得に失敗しました: ${response.status}`);
@@ -175,18 +175,19 @@ export default function AnswersSection({
       // バックエンドのDTO（CreateAnswerDto / CreateCommentDto）に合わせてプロパティ名を変更
       // content -> comment
       // question_id -> questionid, post_id -> postid
-      const payload = 
-      itemType === "question" 
-        ? { 
-          questionId: questionId ?? postId, 
-          comment: inputText, 
-          userId: userIdToUse }
-        : { 
-          postId: postId, 
-          comment: inputText, 
-          userId: userIdToUse 
-        };
-        
+      const payload =
+        itemType === "question"
+          ? {
+            questionId: questionId ?? postId,
+            comment: inputText,
+            userId: userIdToUse
+          }
+          : {
+            postId: postId,
+            comment: inputText,
+            userId: userIdToUse
+          };
+
       const response = await fetchWithAuth(postEndpoint, {
         method: "POST",
         body: JSON.stringify(payload),
@@ -194,10 +195,10 @@ export default function AnswersSection({
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // 保存したコメントをそのままオブジェクトとして取得
         const savedAnswer = data;
-        
+
         // 投稿直後はバックエンドからの返り値にユーザー名が含まれないことがあるため、
         // ログイン中のユーザー名を補完する
         if (!savedAnswer.username && !savedAnswer.userId?.username && !savedAnswer.userid?.username && typeof window !== "undefined") {
@@ -244,24 +245,37 @@ export default function AnswersSection({
         if (itemType === "creation") {
           // コメントの編集APIとの疎通
           const editEndpoint = `/comments/update/${editingAnswer.id}`;
-          
+
           const response = await fetchWithAuth(editEndpoint, {
             method: "PATCH",
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               comment: editInputText,
               postId: postId,
               userId: currentUserId || "1"
-            }), 
+            }),
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || "編集に失敗しました");
           }
         } else {
-          // TODO: 回答の編集APIが実装されたらここに追加する
-          // const editEndpoint = `/answers/update/${editingAnswer.id}`;
-          // ...
+          // 回答の編集APIとの疎通
+          const editEndpoint = `/answers/update/${editingAnswer.id}`;
+
+          const response = await fetchWithAuth(editEndpoint, {
+            method: "PATCH",
+            body: JSON.stringify({
+              comment: editInputText,
+              questionId: questionId ?? postId,
+              userId: currentUserId || "1"
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "編集に失敗しました");
+          }
         }
       }
 
@@ -275,7 +289,7 @@ export default function AnswersSection({
           if (updated.answer !== undefined) updated.answer = editInputText;
           // どれにも該当しない場合は新しくプロパティをセットしないが、念のため
           if (updated.content === undefined && updated.comment === undefined && updated.answer === undefined) {
-             updated.comment = editInputText;
+            updated.comment = editInputText;
           }
           return updated;
         }
@@ -329,7 +343,7 @@ export default function AnswersSection({
             </span>
             件の{label}
           </h3>
-          
+
           {answers.length > 0 && itemType === "question" && (
             <div className="flex gap-4 text-sm bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
               <label className="flex items-center gap-1 cursor-pointer">
@@ -355,7 +369,7 @@ export default function AnswersSection({
             </div>
           )}
         </div>
-        
+
         {loading ? (
           <div className="text-gray-500 py-4 animate-pulse text-sm">読み込み中...</div>
         ) : answers.length > 0 ? (
@@ -383,15 +397,15 @@ export default function AnswersSection({
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                           </svg>
                         </button>
-                        
+
                         {openMenuId === c.id && (
                           <>
                             {/* バックドロップ：画面全体を覆い、クリックでメニューを閉じる */}
-                            <div 
+                            <div
                               className="fixed inset-0 z-10"
                               onClick={() => setOpenMenuId(null)}
                             ></div>
-                            
+
                             {/* ドロップダウンメニュー */}
                             <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-100">
                               <button
@@ -460,7 +474,7 @@ export default function AnswersSection({
             disabled={submitting}
           />
           <div className="flex justify-end">
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={submitting || !inputText.trim()}
               className="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
