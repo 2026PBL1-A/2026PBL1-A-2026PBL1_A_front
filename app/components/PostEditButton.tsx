@@ -98,19 +98,50 @@ export default function PostEditButton({ post }: { post: any }) {
 
     try {
       if (isUsingBackend()) {
-        // TODO: 投稿/質問の編集APIとの疎通
-        // const endpoint = post.itemType === "question" ? `/questions/update/${post.id}` : `/posts/update/${post.id}`;
-        // const response = await fetchWithAuth(endpoint, {
-        //   method: "PATCH",
-        //   body: JSON.stringify({
-        //     title: editTitle,
-        //     content: editContent,
-        //     // TODO: tag_ids: resolvedTagIds, // タグIDの解決処理が必要
-        //   }),
-        // });
-        // if (!response.ok) {
-        //   throw new Error("編集に失敗しました");
-        // }
+        // タグID解決フロー
+        const uniqueSelectedTags = Array.from(
+          new Set(selectedTags.map((tag) => tag.trim()).filter(Boolean))
+        );
+        const existingTagNames = new Set(availableTags.map((tag) => tag.tag));
+        const missingTags = uniqueSelectedTags.filter(
+          (tag) => !existingTagNames.has(tag)
+        );
+
+        // バックエンドに存在しないタグは先に作成しておく
+        if (missingTags.length > 0) {
+          await Promise.all(
+            missingTags.map((tag) => createTag({ tag }))
+          );
+        }
+
+        // タグを再取得して最新のタグリストを得る
+        const refreshedTags = await getAllTags();
+        setAvailableTags(refreshedTags);
+
+        const resolvedTagIds = Array.from(
+          new Set([
+            ...uniqueSelectedTags
+              .map((tag) => refreshedTags.find((t) => t.tag === tag)?.id)
+              .filter((tagId): tagId is string => Boolean(tagId)),
+          ])
+        );
+
+        const payload = {
+          title: editTitle,
+          content: editContent,
+          ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
+        };
+
+        const endpoint = post.itemType === "question" ? `/questions/${post.id}` : `/posts/${post.id}`;
+        const response = await fetchWithAuth(endpoint, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "編集に失敗しました");
+        }
       }
 
       // 成功したらモーダルを閉じてページをリロード（または遷移）して最新情報を取得
