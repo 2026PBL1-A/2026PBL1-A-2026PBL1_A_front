@@ -58,6 +58,22 @@ export default async function PostDetailPage({
     notFound();
   }
 
+  const thumbnailImage = post.images?.find(
+    (img: any) => img.order === 0
+  );
+
+  const headerImage = post.images?.find(
+    (img: any) => img.order === 1
+  );
+
+  const topImage = post.images?.find(
+    (img: any) => img.order === 2
+  );
+
+  const bottomImage = post.images?.find(
+    (img: any) => img.order === 3
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="px-4 max-w-3xl mx-auto">
@@ -71,20 +87,43 @@ export default async function PostDetailPage({
         
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
           {/* 画像がある場合はヒーロー画像として配置 */}
-          {post.imageUrl ? (
+          {(headerImage || thumbnailImage) ? (
             <figure className="w-full aspect-video bg-gray-100 relative m-0">
-              <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+              <img
+                src={
+                  headerImage?.url ||
+                  thumbnailImage?.url
+                }
+                alt={post.title}
+                className="w-full h-full object-cover"
+              />
+
               <div className="absolute top-4 left-4">
-                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
-                  {post.itemType === 'creation' ? '制作物' : '質問'}
+                <span
+                  className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${
+                    post.itemType === "creation"
+                      ? "bg-blue-500 text-white"
+                      : "bg-orange-500 text-white"
+                  }`}
+                >
+                  {post.itemType === "creation"
+                    ? "制作物"
+                    : "質問"}
                 </span>
               </div>
             </figure>
           ) : (
-            /* 画像がない場合はタグだけを表示 */
             <div className="p-8 md:p-12 pb-0">
-              <span className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
-                {post.itemType === 'creation' ? '制作物' : '質問'}
+              <span
+                className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full ${
+                  post.itemType === "creation"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-orange-100 text-orange-800"
+                }`}
+              >
+                {post.itemType === "creation"
+                  ? "制作物"
+                  : "質問"}
               </span>
             </div>
           )}
@@ -116,10 +155,28 @@ export default async function PostDetailPage({
               </div>
             </header>
             
+            {/* 本文上部 */}
+            {topImage && (
+              <img
+                src={topImage.url}
+                alt="top"
+                className="w-full rounded-2xl mb-8"
+              />
+            )}
+
             {/* 本文 */}
             <div className="prose prose-lg max-w-none text-gray-700 leading-loose mb-12 whitespace-pre-wrap">
               {post.content}
             </div>
+
+            {/* 本文下部 */}
+            {bottomImage && (
+              <img
+                src={bottomImage.url}
+                alt="bottom"
+                className="w-full rounded-2xl mt-8"
+              />
+            )}
 
             <hr className="border-gray-100 mb-10" />
 

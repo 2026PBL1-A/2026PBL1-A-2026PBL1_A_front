@@ -3,6 +3,7 @@ export type Post = {
   title: string;
   content: string;
   imageUrl?: string;
+  images?: PostImage[];
   itemType: "creation" | "question"; // 制作物か質問か
   created_at?: string; // 投稿日時
   score?: number; // 評価数（いいねなど）
@@ -15,6 +16,24 @@ export const dummyPosts: Post[] = [
     title: "はじめての投稿",
     content: "これは最初のダミー投稿です。詳細画面への遷移テストです。\n\n改行も含めてきちんと表示されるか確認します。",
     itemType: "creation",
+    images: [
+      {
+        url: "/huji.jpg",
+        order: 0,
+      },
+      {
+        url: "/huji.jpg",
+        order: 1,
+      },
+      {
+        url: "/huji.jpg",
+        order: 2,
+      },
+      {
+        url: "/huji.jpg",
+        order: 3,
+      },
+    ],
     created_at: "2026-04-20T10:00:00Z",
     score: 12,
     tags: ["React", "Next.js", "初心者"],
