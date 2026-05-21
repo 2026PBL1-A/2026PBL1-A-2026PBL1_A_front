@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { isUsingBackend, fetchWithAuth } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,22 @@ export default function PostEditButton({ post }: { post: any }) {
   
   // モーダル用ステート
   const [isOpen, setIsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [editTitle, setEditTitle] = useState(post.title || "");
   
   // 初期タグの取得（配列形式を想定）
@@ -355,17 +371,77 @@ export default function PostEditButton({ post }: { post: any }) {
     }
   };
 
+  const handleDeleteSubmit = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      if (isUsingBackend()) {
+        const response = await fetchWithAuth(`/posts/${post.id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "削除に失敗しました");
+        }
+      }
+
+      setIsDeleteModalOpen(false);
+      alert("削除が完了しました");
+      router.push("/list");
+      router.refresh();
+      
+    } catch (err: any) {
+      console.error("[PostEditButton] 削除エラー:", err);
+      setDeleteError(err.message || "削除に失敗しました。");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition border border-transparent hover:border-blue-100"
-      >
-        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-        </svg>
-        編集
-      </button>
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="flex items-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-full transition"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+          </svg>
+        </button>
+
+        {isMenuOpen && (
+          <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-100 z-10 py-1 animate-in fade-in zoom-in duration-100">
+            <button
+              onClick={() => {
+                setIsOpen(true);
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+              編集
+            </button>
+            {post.itemType === 'creation' && (
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(true);
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                削除
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 編集モーダル */}
       {isOpen && (
@@ -570,6 +646,41 @@ export default function PostEditButton({ post }: { post: any }) {
                     保存中...
                   </>
                 ) : "保存する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除確認モーダル */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">投稿を削除しますか？</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              この操作は取り消せません。本当にこの制作物を削除してもよろしいですか？
+            </p>
+
+            {deleteError && (
+              <div className="mb-4 text-red-500 text-sm font-medium p-3 bg-red-50 rounded-lg">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                disabled={isDeleting}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDeleteSubmit}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center disabled:opacity-50"
+              >
+                {isDeleting ? "削除中..." : "削除する"}
               </button>
             </div>
           </div>
