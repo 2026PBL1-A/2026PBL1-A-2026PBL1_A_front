@@ -376,7 +376,8 @@ export default function PostEditButton({ post }: { post: any }) {
     setDeleteError(null);
     try {
       if (isUsingBackend()) {
-        const response = await fetchWithAuth(`/posts/${post.id}`, {
+        const endpoint = post.itemType === "question" ? `/questions/${post.id}` : `/posts/${post.id}`;
+        const response = await fetchWithAuth(endpoint, {
           method: "DELETE",
         });
 
@@ -425,20 +426,18 @@ export default function PostEditButton({ post }: { post: any }) {
               </svg>
               編集
             </button>
-            {post.itemType === 'creation' && (
-              <button
-                onClick={() => {
-                  setIsDeleteModalOpen(true);
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-                削除
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setIsDeleteModalOpen(true);
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              削除
+            </button>
           </div>
         )}
       </div>

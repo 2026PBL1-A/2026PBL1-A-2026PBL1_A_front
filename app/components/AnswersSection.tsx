@@ -306,6 +306,47 @@ export default function AnswersSection({
     }
   };
 
+  // 削除の処理
+  const handleDeleteAnswer = async (id: string | number) => {
+    if (!window.confirm("本当に削除しますか？")) return;
+
+    try {
+      if (isUsingBackend()) {
+        if (itemType === "creation") {
+          // コメントの削除API
+          const deleteEndpoint = `/comments/delete/${id}`;
+          const response = await fetchWithAuth(deleteEndpoint, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "削除に失敗しました");
+          }
+        } else {
+          // 回答の削除API
+          const deleteEndpoint = `/answers/delete/${id}`;
+          const response = await fetchWithAuth(deleteEndpoint, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "削除に失敗しました");
+          }
+        }
+      }
+
+      // 成功したら画面上から消す
+      setAnswers(prevAnswers => prevAnswers.filter(ans => ans.id !== id));
+      setOpenMenuId(null);
+      alert("削除が完了しました");
+    } catch (err) {
+      console.error(`[AnswersSection] 削除エラー:`, err);
+      alert(`${label}の削除に失敗しました。`);
+    }
+  };
+
   // ユーザー名を取得するヘルパー関数
   const getUsername = (c: AnswerData) => {
     if (c.username) return c.username;
@@ -421,7 +462,15 @@ export default function AnswersSection({
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 編集
                               </button>
-                              {/* TODO: ここに削除ボタンを追加する */}
+                              <button
+                                onClick={() => handleDeleteAnswer(c.id)}
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition flex items-center font-medium"
+                              >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                削除
+                              </button>
                             </div>
                           </>
                         )}
