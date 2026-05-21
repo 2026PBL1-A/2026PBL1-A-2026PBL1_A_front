@@ -155,6 +155,13 @@ export default function ProfilePage() {
           setBio(profileResp.profile.bio);
           localStorage.setItem("user_bio", profileResp.profile.bio);
         }
+        
+        if (profileResp.profile.avatarUrl) {
+          const fetchedAvatar = profileResp.profile.avatarUrl;
+          setAvatarUrl(fetchedAvatar);
+          setSelectedIcon(fetchedAvatar);
+          localStorage.setItem("avatar_url", fetchedAvatar);
+        }
 
         const parsedSkills = (profileResp.profile.profileTags || [])
           .map((profileTag) => profileTag.tag?.tag)

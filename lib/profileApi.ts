@@ -151,3 +151,28 @@ export async function getProfileQuestions(profileId: string): Promise<ProfilePos
     method: "GET",
   });
 }
+
+// プロフィール画像をアップロードする API 呼び出し関数
+export async function uploadProfileAvatar(profileId: string, file: File): Promise<{ message: string; avatar_url: string }> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const headers = new Headers();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`/api/profiles/avatar/upload/${encodeURIComponent(profileId)}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "画像のアップロードに失敗しました");
+  }
+
+  return response.json();
+}

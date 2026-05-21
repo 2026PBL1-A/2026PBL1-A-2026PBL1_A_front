@@ -1,8 +1,30 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { isUsingBackend, fetchWithAuth } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
 import { useRouter } from "next/navigation";
+
+// 画像スロットの定義
+interface ImageSlot {
+  order: number;
+  label: string;
+  color: string;       // ボタンの色クラス
+  hoverColor: string;  // ホバー時の色クラス
+}
+
+const IMAGE_SLOTS: ImageSlot[] = [
+  { order: 0, label: "サムネイル", color: "bg-blue-500", hoverColor: "hover:bg-blue-600" },
+  { order: 1, label: "ヘッダー", color: "bg-purple-500", hoverColor: "hover:bg-purple-600" },
+  { order: 2, label: "本文上部", color: "bg-orange-500", hoverColor: "hover:bg-orange-600" },
+  { order: 3, label: "本文下部", color: "bg-green-500", hoverColor: "hover:bg-green-600" },
+];
+
+// 既存画像の情報
+interface ExistingImage {
+  id: string;          // 画像レコードのID (PATCH/DELETE で使う)
+  imageUrl: string;    // 画像の URL
+  sortOrder: number;
+}
 
 export default function PostEditButton({ post }: { post: any }) {
   const router = useRouter();
@@ -25,6 +47,16 @@ export default function PostEditButton({ post }: { post: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // --- 画像編集用ステート ---
+  // 既存画像の情報 (order をキーとした Map)
+  const [existingImages, setExistingImages] = useState<Map<number, ExistingImage>>(new Map());
+  // 新しく選択されたファイル (order をキーとした Map)
+  const [newFiles, setNewFiles] = useState<Map<number, File>>(new Map());
+  // 削除対象の画像ID (order をキーとした Set)
+  const [deletedOrders, setDeletedOrders] = useState<Set<number>>(new Set());
+  // 画像セクションの開閉
+  const [isImageSectionOpen, setIsImageSectionOpen] = useState(false);
+
   const presetTags = [
     "React", "Next.js", "TypeScript", "JavaScript", "Java", "Python",
     "C", "C++", "HTML", "CSS", "Node.js", "Webアプリ",
@@ -41,6 +73,22 @@ export default function PostEditButton({ post }: { post: any }) {
         : [...prev, tag]
     );
   };
+
+  // 既存画像を post.postImages から抽出
+  const initialExistingImages = useMemo(() => {
+    const map = new Map<number, ExistingImage>();
+    if (post.postImages && Array.isArray(post.postImages)) {
+      for (const img of post.postImages) {
+        const order = img.sortOrder ?? img.sort_order ?? 0;
+        map.set(order, {
+          id: img.id,
+          imageUrl: img.imageUrl || img.image_url,
+          sortOrder: order,
+        });
+      }
+    }
+    return map;
+  }, [post.postImages]);
 
   useEffect(() => {
     // ログインユーザーのIDを取得
@@ -71,6 +119,16 @@ export default function PostEditButton({ post }: { post: any }) {
     loadTags();
   }, []);
 
+  // モーダルを開いたときに既存画像ステートを初期化する
+  useEffect(() => {
+    if (isOpen) {
+      setExistingImages(new Map(initialExistingImages));
+      setNewFiles(new Map());
+      setDeletedOrders(new Set());
+      setIsImageSectionOpen(false);
+    }
+  }, [isOpen, initialExistingImages]);
+
   // 自分の投稿かどうか判定
   const isMyPost = () => {
     if (!currentUserId) return false;
@@ -89,6 +147,66 @@ export default function PostEditButton({ post }: { post: any }) {
   if (!isMyPost()) {
     return null; // 自分の投稿でなければ何も表示しない
   }
+
+  // --- 画像操作ヘルパー ---
+
+  // スロットのプレビューURLを取得
+  const getPreviewUrl = (order: number): string | null => {
+    // 削除済みなら表示しない
+    if (deletedOrders.has(order)) return null;
+    // 新しいファイルが選択されていたらそのプレビュー
+    const newFile = newFiles.get(order);
+    if (newFile) return URL.createObjectURL(newFile);
+    // 既存画像があればそのURL
+    const existing = existingImages.get(order);
+    if (existing) {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+      // 絶対URLならそのまま、相対URLならバックエンドURLを付与
+      return existing.imageUrl.startsWith("http")
+        ? existing.imageUrl
+        : `${backendUrl}${existing.imageUrl}`;
+    }
+    return null;
+  };
+
+  // ファイル選択ハンドラ
+  const handleFileSelect = (order: number, file: File) => {
+    setNewFiles((prev) => {
+      const next = new Map(prev);
+      next.set(order, file);
+      return next;
+    });
+    // 削除フラグが立っていたら解除する（新しいファイルで上書き）
+    setDeletedOrders((prev) => {
+      const next = new Set(prev);
+      next.delete(order);
+      return next;
+    });
+  };
+
+  // 画像削除ハンドラ
+  const handleImageDelete = (order: number) => {
+    // 新しいファイルがあればそれを外す
+    setNewFiles((prev) => {
+      const next = new Map(prev);
+      next.delete(order);
+      return next;
+    });
+    // 既存画像があれば削除対象に追加
+    if (existingImages.has(order)) {
+      setDeletedOrders((prev) => {
+        const next = new Set(prev);
+        next.add(order);
+        return next;
+      });
+    }
+  };
+
+  // スロットに画像があるか（削除されていない既存 or 新ファイル）
+  const hasImage = (order: number): boolean => {
+    if (deletedOrders.has(order)) return !!newFiles.has(order);
+    return existingImages.has(order) || newFiles.has(order);
+  };
 
   const handleEditSubmit = async () => {
     if (!editTitle.trim() || !editContent.trim()) return;
@@ -132,15 +250,95 @@ export default function PostEditButton({ post }: { post: any }) {
           ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
         };
 
+        // テキスト・タグの更新を試みる（APIが未実装の場合でも画像処理は続行する）
         const endpoint = post.itemType === "question" ? `/questions/${post.id}` : `/posts/${post.id}`;
-        const response = await fetchWithAuth(endpoint, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
+        try {
+          const response = await fetchWithAuth(endpoint, {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || "編集に失敗しました");
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn("テキスト更新に失敗しましたが、画像処理は続行します:", errorData.message);
+          }
+        } catch (err) {
+          console.warn("テキスト更新APIの呼び出しに失敗しましたが、画像処理は続行します:", err);
+        }
+
+        // --- 画像の処理 ---
+        const token = localStorage.getItem("access_token");
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+        const isQuestion = post.itemType === "question";
+        const imageBaseEndpoint = isQuestion ? "question-images" : "post-images";
+
+        // 1) 削除処理
+        for (const order of deletedOrders) {
+          const existing = existingImages.get(order);
+          if (existing && !newFiles.has(order)) {
+            // 削除のみ（差し替えでない場合）
+            try {
+              await fetch(`${backendUrl}/${imageBaseEndpoint}/${existing.id}`, {
+                method: "DELETE",
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+              });
+            } catch (err) {
+              console.error(`画像削除エラー (order ${order}):`, err);
+            }
+          }
+        }
+
+        // 2) 差し替え・新規追加処理
+        for (const [order, file] of newFiles) {
+          const existing = existingImages.get(order);
+          const isDeleted = deletedOrders.has(order);
+
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("Order", String(order));
+
+          if (existing && !isDeleted) {
+            // 既存画像がある → PATCH で差し替え
+            try {
+              await fetch(`${backendUrl}/${imageBaseEndpoint}/upload/${existing.id}`, {
+                method: "PATCH",
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: formData,
+              });
+            } catch (err) {
+              console.error(`画像差し替えエラー (order ${order}):`, err);
+            }
+          } else {
+            // 既存なし or 削除済み → POST で新規追加
+            if (existing && isDeleted) {
+              // 先に削除
+              try {
+                await fetch(`${backendUrl}/${imageBaseEndpoint}/${existing.id}`, {
+                  method: "DELETE",
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  },
+                });
+              } catch (err) {
+                console.error(`画像削除エラー (order ${order}):`, err);
+              }
+            }
+            try {
+              await fetch(`${backendUrl}/${imageBaseEndpoint}/upload/${post.id}`, {
+                method: "POST",
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: formData,
+              });
+            } catch (err) {
+              console.error(`画像追加エラー (order ${order}):`, err);
+            }
+          }
         }
       }
 
@@ -254,7 +452,7 @@ export default function PostEditButton({ post }: { post: any }) {
               )}
             </div>
 
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">本文</label>
               <textarea
                 value={editContent}
@@ -264,6 +462,93 @@ export default function PostEditButton({ post }: { post: any }) {
                 disabled={isSubmitting}
                 required
               />
+            </div>
+
+            {/* 画像編集セクション */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setIsImageSectionOpen(!isImageSectionOpen)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition mb-3"
+              >
+                <svg
+                  className={`w-4 h-4 transition-transform ${isImageSectionOpen ? "rotate-90" : ""}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+                📷 画像の編集
+                {(newFiles.size > 0 || deletedOrders.size > 0) && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    変更あり
+                  </span>
+                )}
+              </button>
+
+              {isImageSectionOpen && (
+                <div className="space-y-3 border border-gray-200 rounded-xl p-4 bg-gray-50">
+                  {IMAGE_SLOTS.map((slot) => {
+                    const previewUrl = getPreviewUrl(slot.order);
+                    const imagePresent = hasImage(slot.order);
+                    const hasNewFile = newFiles.has(slot.order);
+                    const isDeletedExisting = deletedOrders.has(slot.order) && !hasNewFile;
+
+                    return (
+                      <div key={slot.order} className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold text-gray-700">{slot.label}</p>
+                          <div className="flex gap-2">
+                            {/* ファイル選択ボタン */}
+                            <label className={`text-xs px-3 py-1.5 ${slot.color} text-white rounded-lg cursor-pointer ${slot.hoverColor} transition shadow-sm`}>
+                              {imagePresent ? "差し替え" : "追加"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handleFileSelect(slot.order, e.target.files[0]);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {/* 削除ボタン（画像がある場合のみ） */}
+                            {imagePresent && (
+                              <button
+                                type="button"
+                                onClick={() => handleImageDelete(slot.order)}
+                                className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-sm"
+                              >
+                                削除
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* プレビュー */}
+                        {previewUrl ? (
+                          <div className="relative">
+                            <img
+                              src={previewUrl}
+                              alt={slot.label}
+                              className="w-full max-h-[120px] object-contain rounded-lg border border-gray-100"
+                            />
+                            {hasNewFile && (
+                              <span className="absolute top-1 left-1 text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                                新しい画像
+                              </span>
+                            )}
+                          </div>
+                        ) : isDeletedExisting ? (
+                          <p className="text-xs text-red-500 italic py-2">🗑 削除予定</p>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic py-2">画像なし</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             
             <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">

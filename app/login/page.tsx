@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
+import { getAllProfiles } from "@/lib/profileApi";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -73,6 +74,17 @@ export default function LoginPage() {
         // プロフィール詳細/投稿一覧の取得用の user_id も保持する
         if (receivedUserId) {
           localStorage.setItem("user_id", receivedUserId);
+          
+          // アイコン画像の復元処理
+          try {
+            const profiles = await getAllProfiles();
+            const myProfile = profiles.find((p) => p.user && p.user.id === receivedUserId);
+            if (myProfile && myProfile.profile && myProfile.profile.avatarUrl) {
+              localStorage.setItem("avatar_url", myProfile.profile.avatarUrl);
+            }
+          } catch (err) {
+            console.error("プロフィール取得エラー:", err);
+          }
         }
 
         // DevTools でログイン成功地点を確認するためのログ

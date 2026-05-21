@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         // 例: /api/auth/login -> http://localhost:5000/auth/login
         destination: `${backendUrl}/:path*`,
       },
+      {
+        // バックエンドのアップロード画像ディレクトリを転送する
+        source: "/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
+      },
     ];
   },
 };
