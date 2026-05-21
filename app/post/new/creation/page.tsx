@@ -166,6 +166,8 @@ export default function CreateCreationPage() {
           const formData = new FormData();
           formData.append("file", img.file);
 
+          formData.append("order", String(img.order));
+
           try {
             const uploadResponse = await fetch(
               `${backendUrl}/post-images/upload/${postId}`,

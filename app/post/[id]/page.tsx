@@ -78,6 +78,21 @@ export default async function PostDetailPage({
     notFound();
   }
 
+  // バックエンド画像とダミー画像の両方をサポート
+  const getImageUrl = (order: number) => {
+    if (post.postImages && post.postImages[order]) {
+      return `${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[order].imageUrl}`;
+    }
+    const dummyImg = post.images?.find((img: any) => img.order === order);
+    if (dummyImg) return dummyImg.url;
+    return null;
+  };
+
+  const thumbnailUrl = getImageUrl(0);
+  const headerUrl = getImageUrl(1);
+  const topUrl = getImageUrl(2);
+  const bottomUrl = getImageUrl(3);
+
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="px-4 max-w-3xl mx-auto">
@@ -90,33 +105,19 @@ export default async function PostDetailPage({
         </div>
         
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
-          {/* 画像がある場合はヒーロー画像として配置 */}
-          {post.postImages && post.postImages[1] ? (
-            <figure className="w-full aspect-video bg-gray-100 relative m-0">
-              <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[1].imageUrl}`} alt={post.title} className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4">
-                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
-                  {post.itemType === 'creation' ? '制作物' : '質問'}
-                </span>
-              </div>
-            </figure>
-          ) : post.imageUrl ? (
-            <figure className="w-full aspect-video bg-gray-100 relative m-0">
-              <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4">
-                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
-                  {post.itemType === 'creation' ? '制作物' : '質問'}
-                </span>
-              </div>
-            </figure>
-          ) : (
-            /* 画像がない場合はタグだけを表示 */
-            <div className="p-8 md:p-12 pb-0">
-              <span className={`inline-block px-4 py-1.5 text-sm font-bold rounded-full ${post.itemType === 'creation' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}`}>
+          {/* ヒーロー画像（ヘッダー画像またはサムネイル画像、なければデフォルト画像） */}
+          <figure className="w-full aspect-video bg-gray-100 relative m-0">
+            <img
+              src={headerUrl || thumbnailUrl || (post.itemType === 'creation' ? '/default-creation.jpg' : '/default-question.jpg')}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-4 left-4">
+              <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
                 {post.itemType === 'creation' ? '制作物' : '質問'}
               </span>
             </div>
-          )}
+          </figure>
 
           <div className="p-8 md:p-12 pt-8">
             <header className="mb-10">
@@ -146,21 +147,21 @@ export default async function PostDetailPage({
             </header>
 
             {/* 本文上部画像 */}
-            {post.postImages && post.postImages[2] && (
+            {topUrl && (
               <figure className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-                <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[2].imageUrl}`} alt="本文上部画像" className="w-full h-auto object-contain max-h-[500px]" />
+                <img src={topUrl} alt="本文上部画像" className="w-full h-auto object-contain max-h-[500px]" />
               </figure>
             )}
-            
+
             {/* 本文 */}
             <div className="prose prose-lg max-w-none text-gray-700 leading-loose mb-12 whitespace-pre-wrap">
               {post.content}
             </div>
 
             {/* 本文下部画像 */}
-            {post.postImages && post.postImages[3] && (
+            {bottomUrl && (
               <figure className="mb-12 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-                <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[3].imageUrl}`} alt="本文下部画像" className="w-full h-auto object-contain max-h-[500px]" />
+                <img src={bottomUrl} alt="本文下部画像" className="w-full h-auto object-contain max-h-[500px]" />
               </figure>
             )}
 

@@ -36,11 +36,13 @@ function PostCard({ post }: { post: any }) {
   return (
     <Link href={`/post/${post.id}`} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
       {/* サムネイル画像エリア */}
-      {thumbnailUrl && (
-        <div className="w-full h-48 bg-gray-100 overflow-hidden shrink-0">
-          <img src={thumbnailUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        </div>
-      )}
+      <div className="w-full aspect-video bg-gray-100 overflow-hidden shrink-0">
+        <img 
+          src={thumbnailUrl || (post.itemType === "creation" ? "/default-creation.jpg" : "/default-question.jpg")} 
+          alt={post.title} 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+        />
+      </div>
       {/* コンテンツエリア */}
       <div className="p-6 flex flex-col flex-grow">
         <div className="flex justify-between items-center mb-3">
