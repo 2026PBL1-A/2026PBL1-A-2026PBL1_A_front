@@ -156,24 +156,51 @@ export default function CreateCreationPage() {
           { file: bottomImage, order: 3 },
         ];
 
+        let uploadFailed = false;
+
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000";
+
         for (const img of images) {
           if (!img.file) continue;
 
           const formData = new FormData();
           formData.append("file", img.file);
 
-          const uploadResponse = await fetch(
-            `/api/post-images/upload/${postId}`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
+          try {
+            const uploadResponse = await fetch(
+              `${backendUrl}/post-images/upload/${postId}`,
+              {
+                method: "POST",
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: formData,
+              }
+            );
 
-          if (!uploadResponse.ok) {
-            throw new Error("画像アップロード失敗");
+            if (!uploadResponse.ok) {
+              uploadFailed = true;
+              break;
+            }
+          } catch (err) {
+            console.error("画像アップロードエラー:", err);
+            uploadFailed = true;
+            break;
           }
         }
+
+        if (uploadFailed) {
+          // 画像アップロードに失敗した場合は投稿を削除（ロールバック）
+          await fetch(`/api/posts/${postId}`, {
+            method: "DELETE",
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }).catch(console.error); // 削除エラーはログだけ残す
+
+          throw new Error("画像のアップロードに失敗したため、投稿を中止しました");
+        }
+
         alert("投稿しました");
       } else {
         alert("投稿しました（ローカル）");
