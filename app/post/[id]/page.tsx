@@ -44,6 +44,26 @@ export default async function PostDetailPage({
       console.error(`[Post Detail] バックエンド取得エラー (ID: ${resolvedParams.id}):`, error);
       // フォールバック: ダミーデータ
     }
+
+    if (post) {
+      try {
+        const endpoint = post.itemType === 'creation' 
+          ? `/post-images/post/${resolvedParams.id}` 
+          : `/question-images/question/${resolvedParams.id}`;
+          
+        const imgRes = await fetch(`${process.env.BACKEND_API_URL || "http://localhost:5000"}${endpoint}`, { cache: "no-store" });
+        if (imgRes.ok) {
+          const images = await imgRes.json();
+          if (images && images.length > 0) {
+            post.postImages = images;
+            // 互換性のため、1枚目をサムネイル（hero画像）として設定
+            post.imageUrl = `${process.env.BACKEND_API_URL || "http://localhost:5000"}${images[0].imageUrl}`;
+          }
+        }
+      } catch (err) {
+        console.error("画像取得エラー:", err);
+      }
+    }
   }
 
   // バックエンド取得失敗またはローカルモードの場合、ダミーデータを使用
@@ -71,7 +91,16 @@ export default async function PostDetailPage({
         
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
           {/* 画像がある場合はヒーロー画像として配置 */}
-          {post.imageUrl ? (
+          {post.postImages && post.postImages[1] ? (
+            <figure className="w-full aspect-video bg-gray-100 relative m-0">
+              <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[1].imageUrl}`} alt={post.title} className="w-full h-full object-cover" />
+              <div className="absolute top-4 left-4">
+                <span className={`px-4 py-1.5 text-sm font-bold rounded-full shadow-md ${post.itemType === 'creation' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
+                  {post.itemType === 'creation' ? '制作物' : '質問'}
+                </span>
+              </div>
+            </figure>
+          ) : post.imageUrl ? (
             <figure className="w-full aspect-video bg-gray-100 relative m-0">
               <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
               <div className="absolute top-4 left-4">
@@ -115,11 +144,25 @@ export default async function PostDetailPage({
                 )}
               </div>
             </header>
+
+            {/* 本文上部画像 */}
+            {post.postImages && post.postImages[2] && (
+              <figure className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[2].imageUrl}`} alt="本文上部画像" className="w-full h-auto object-contain max-h-[500px]" />
+              </figure>
+            )}
             
             {/* 本文 */}
             <div className="prose prose-lg max-w-none text-gray-700 leading-loose mb-12 whitespace-pre-wrap">
               {post.content}
             </div>
+
+            {/* 本文下部画像 */}
+            {post.postImages && post.postImages[3] && (
+              <figure className="mb-12 rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                <img src={`${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[3].imageUrl}`} alt="本文下部画像" className="w-full h-auto object-contain max-h-[500px]" />
+              </figure>
+            )}
 
             <hr className="border-gray-100 mb-10" />
 

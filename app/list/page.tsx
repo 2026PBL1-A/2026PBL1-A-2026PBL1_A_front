@@ -6,6 +6,86 @@ import Link from "next/link";
 import { dummyPosts, Post } from "@/app/data/dummyPosts";
 import { isUsingBackend } from "@/lib/api";
 
+function PostCard({ post }: { post: any }) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(post.imageUrl || null);
+  
+  useEffect(() => {
+    if (thumbnailUrl || !isUsingBackend()) return;
+    
+    let isMounted = true;
+    const fetchImage = async () => {
+      try {
+        const endpoint = post.itemType === 'creation' 
+          ? `/post-images/post/${post.id}` 
+          : `/question-images/question/${post.id}`;
+          
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${endpoint}`);
+        if (res.ok) {
+          const images = await res.json();
+          // 最初の画像をサムネイルとして扱う
+          if (isMounted && images && images.length > 0) {
+            setThumbnailUrl(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${images[0].imageUrl}`);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchImage();
+    return () => { isMounted = false; };
+  }, [post.id, post.itemType, thumbnailUrl]);
+
+  return (
+    <Link href={`/post/${post.id}`} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+      {/* サムネイル画像エリア */}
+      {thumbnailUrl && (
+        <div className="w-full h-48 bg-gray-100 overflow-hidden shrink-0">
+          <img src={thumbnailUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        </div>
+      )}
+      {/* コンテンツエリア */}
+      <div className="p-6 flex flex-col flex-grow">
+        <div className="flex justify-between items-center mb-3">
+          <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${((post as any).itemType ?? (post as any).type) === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
+            {((post as any).itemType ?? (post as any).type) === 'creation' ? '制作物' : '質問'}
+          </span>
+          <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+            {((post as any).itemType ?? (post as any).type) === 'creation' && (
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
+                {post.score ?? 0}
+              </span>
+            )}
+            {post.created_at && (
+              <span>
+                {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
+              </span>
+            )}
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+          {post.title}
+        </h2>
+        <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
+          {post.content}
+        </p>
+        <div className="flex flex-wrap gap-2 mt-3">
+          {post.tags?.map((tag: string) => (
+            <span
+              key={tag}
+              className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-sm font-semibold text-blue-500 group-hover:text-blue-600 transition-colors">詳細を見る</span>
+          <svg className="w-4 h-4 text-blue-500 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Page() {
   const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
   const [posts, setPosts] = useState<Post[]>(dummyPosts);
@@ -19,6 +99,15 @@ export default function Page() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
+  
+  // ページネーション用ステート
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // 検索条件やフィルターが変わったらページを1に戻す
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, sortType, selectedTagIds, keywordSearch, tagSearch]);
   const normalizedKeywordSearch = keywordSearch.trim();
   const keywordTerms = normalizedKeywordSearch
     .split(/\s+/)
@@ -257,6 +346,12 @@ export default function Page() {
     }
   });
 
+  const totalPages = Math.ceil(sortedPosts.length / itemsPerPage);
+  const paginatedPosts = sortedPosts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div>
       <div className="fixed top-4 left-4 z-10">
@@ -399,64 +494,33 @@ export default function Page() {
         {isLoading && <p className="text-gray-500 text-center py-10">読み込み中...</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {sortedPosts.map((post) => (
-            <Link href={`/post/${post.id}`} key={post.id} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              {/* サムネイル画像エリア */}
-              {post.imageUrl && (
-                <div className="w-full h-48 bg-gray-100 overflow-hidden shrink-0">
-                  <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                </div>
-              )}
-              {/* コンテンツエリア */}
-              <div className="p-6 flex flex-col flex-grow">
-                <div className="flex justify-between items-center mb-3">
-                  {/* タグ */}
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${((post as any).itemType ?? (post as any).type) === 'creation' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                    {((post as any).itemType ?? (post as any).type) === 'creation' ? '制作物' : '質問'}
-                  </span>
-                  {/* 日付と評価 */}
-                  <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                    {((post as any).itemType ?? (post as any).type) === 'creation' && (
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
-                        {post.score ?? 0}
-                      </span>
-                    )}
-                    {post.created_at && (
-                      <span>
-                        {new Date(post.created_at).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                  {post.title}
-                </h2>
-                <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
-                  {post.content}
-                </p>
-                {/* タグ一覧 */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {post.tags?.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* 続きを読む要素 */}
-                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-500 group-hover:text-blue-600 transition-colors">詳細を見る</span>
-                  <svg className="w-4 h-4 text-blue-500 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </div>
-              </div>
-            </Link>
+          {paginatedPosts.map((post) => (
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
+
+        {/* ページネーションUI */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center mt-12 gap-3">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-gray-700"
+            >
+              前へ
+            </button>
+            <span className="px-4 py-2 text-gray-700 font-bold">
+              {currentPage} <span className="text-gray-400 font-normal mx-1">/</span> {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-gray-700"
+            >
+              次へ
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 投稿ボタン群 */}
