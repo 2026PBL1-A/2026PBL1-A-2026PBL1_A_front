@@ -156,6 +156,7 @@ export default function CreateQuestionPage() {
 
           const formData = new FormData();
           formData.append("file", img.file);
+          formData.append("order", String(img.order));
 
           try {
             const uploadResponse = await fetch(

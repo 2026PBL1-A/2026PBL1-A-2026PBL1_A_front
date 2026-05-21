@@ -13,7 +13,7 @@ export default async function PostDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  
+
   let post = null;
 
   if (isUsingBackend()) {
@@ -47,17 +47,20 @@ export default async function PostDetailPage({
 
     if (post) {
       try {
-        const endpoint = post.itemType === 'creation' 
-          ? `/post-images/post/${resolvedParams.id}` 
+        const endpoint = post.itemType === 'creation'
+          ? `/post-images/post/${resolvedParams.id}`
           : `/question-images/question/${resolvedParams.id}`;
-          
+
         const imgRes = await fetch(`${process.env.BACKEND_API_URL || "http://localhost:5000"}${endpoint}`, { cache: "no-store" });
         if (imgRes.ok) {
           const images = await imgRes.json();
           if (images && images.length > 0) {
             post.postImages = images;
-            // 互換性のため、1枚目をサムネイル（hero画像）として設定
-            post.imageUrl = `${process.env.BACKEND_API_URL || "http://localhost:5000"}${images[0].imageUrl}`;
+            // sortOrder === 0 の画像をサムネイル（hero画像）として設定
+            const thumbImg = images.find((img: any) => img.sortOrder === 0);
+            if (thumbImg) {
+              post.imageUrl = `${process.env.BACKEND_API_URL || "http://localhost:5000"}${thumbImg.imageUrl}`;
+            }
           }
         }
       } catch (err) {
@@ -80,8 +83,11 @@ export default async function PostDetailPage({
 
   // バックエンド画像とダミー画像の両方をサポート
   const getImageUrl = (order: number) => {
-    if (post.postImages && post.postImages[order]) {
-      return `${process.env.BACKEND_API_URL || "http://localhost:5000"}${post.postImages[order].imageUrl}`;
+    if (post.postImages) {
+      const backendImg = post.postImages.find((img: any) => img.sortOrder === order);
+      if (backendImg) {
+        return `${process.env.BACKEND_API_URL || "http://localhost:5000"}${backendImg.imageUrl}`;
+      }
     }
     const dummyImg = post.images?.find((img: any) => img.order === order);
     if (dummyImg) return dummyImg.url;
@@ -103,7 +109,7 @@ export default async function PostDetailPage({
             </svg>
           </Link>
         </div>
-        
+
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
           {/* ヒーロー画像（ヘッダー画像またはサムネイル画像、なければデフォルト画像） */}
           <figure className="w-full aspect-video bg-gray-100 relative m-0">
@@ -124,7 +130,7 @@ export default async function PostDetailPage({
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
                 {post.title}
               </h1>
-              
+
               {/* メタデータ */}
               <div className="flex items-center justify-between text-gray-500 text-sm">
                 <div className="flex items-center">
@@ -138,7 +144,7 @@ export default async function PostDetailPage({
                   )}
                   <PostEditButton post={post} />
                 </div>
-                
+
                 {/* 評価（スコア）ボタン：制作物の場合のみ表示 */}
                 {post.itemType === 'creation' && (
                   <ScoreButton postId={post.id} initialScore={post.score} />

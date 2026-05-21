@@ -8,26 +8,29 @@ import { isUsingBackend } from "@/lib/api";
 
 function PostCard({ post }: { post: any }) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(post.imageUrl || null);
-  
+
   useEffect(() => {
     if (thumbnailUrl || !isUsingBackend()) return;
-    
+
     let isMounted = true;
     const fetchImage = async () => {
       try {
-        const endpoint = post.itemType === 'creation' 
-          ? `/post-images/post/${post.id}` 
+        const endpoint = post.itemType === 'creation'
+          ? `/post-images/post/${post.id}`
           : `/question-images/question/${post.id}`;
-          
+
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${endpoint}`);
         if (res.ok) {
           const images = await res.json();
-          // 最初の画像をサムネイルとして扱う
+          // sortOrder が 0 の画像をサムネイルとして扱う
           if (isMounted && images && images.length > 0) {
-            setThumbnailUrl(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${images[0].imageUrl}`);
+            const thumbImg = images.find((img: any) => img.sortOrder === 0);
+            if (thumbImg) {
+              setThumbnailUrl(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${thumbImg.imageUrl}`);
+            }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchImage();
     return () => { isMounted = false; };
@@ -37,10 +40,10 @@ function PostCard({ post }: { post: any }) {
     <Link href={`/post/${post.id}`} className="group flex flex-col bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
       {/* サムネイル画像エリア */}
       <div className="w-full aspect-video bg-gray-100 overflow-hidden shrink-0">
-        <img 
-          src={thumbnailUrl || (post.itemType === "creation" ? "/default-creation.jpg" : "/default-question.jpg")} 
-          alt={post.title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+        <img
+          src={thumbnailUrl || (post.itemType === "creation" ? "/default-creation.jpg" : "/default-question.jpg")}
+          alt={post.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
       {/* コンテンツエリア */}
@@ -101,7 +104,7 @@ export default function Page() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
-  
+
   // ページネーション用ステート
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -433,8 +436,8 @@ export default function Page() {
             <button
               onClick={() => setFilterType("all")}
               className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "all"
-                  ? "bg-gray-800 text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
             >
               全部表示
@@ -443,8 +446,8 @@ export default function Page() {
             <button
               onClick={() => setFilterType("creation")}
               className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "creation"
-                  ? "bg-blue-500 text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                ? "bg-blue-500 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
             >
               制作物
@@ -453,8 +456,8 @@ export default function Page() {
             <button
               onClick={() => setFilterType("question")}
               className={`px-4 py-2 rounded-full font-bold text-sm transition-colors shadow-sm ${filterType === "question"
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                ? "bg-orange-500 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                 }`}
             >
               質問
@@ -504,7 +507,7 @@ export default function Page() {
         {/* ページネーションUI */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center mt-12 gap-3">
-            <button 
+            <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-gray-700"
@@ -514,7 +517,7 @@ export default function Page() {
             <span className="px-4 py-2 text-gray-700 font-bold">
               {currentPage} <span className="text-gray-400 font-normal mx-1">/</span> {totalPages}
             </span>
-            <button 
+            <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition font-medium text-gray-700"
@@ -603,8 +606,8 @@ export default function Page() {
                     key={tag.id}
                     onClick={() => toggleTag(tag.tag)}
                     className={`px-3 py-1 rounded-full text-sm transition ${tempSelectedTagNames.includes(tag.tag)
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-100 hover:bg-gray-200"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 hover:bg-gray-200"
                       }`}
                   >
                     #{tag.tag}
