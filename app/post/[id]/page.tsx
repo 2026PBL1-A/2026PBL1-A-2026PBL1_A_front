@@ -6,6 +6,7 @@ import ScoreButton from "@/app/components/ScoreButton";
 import PostEditButton from "@/app/components/PostEditButton";
 import { isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
+import FollowButton from "@/app/components/FollowButton";
 
 export default async function PostDetailPage({
   params,
@@ -150,7 +151,7 @@ export default async function PostDetailPage({
               </h1>
 
               {/* 投稿者情報 */}
-              <div className="flex items-center mb-6">
+              <div className="flex items-center justify-between mb-6">
                 {(() => {
                   const postUserIdStr = post.userId?.id ?? post.userId ?? post.userid?.id ?? post.userid ?? post.user_id?.id ?? post.user_id;
                   let postUsername = post.user?.username ?? post.userId?.username ?? post.userid?.username ?? post.user_id?.username ?? post.username ?? "名無しユーザー";
@@ -164,18 +165,32 @@ export default async function PostDetailPage({
                   }
 
                   return (
-                    <Link href={`/profile?userId=${postUserIdStr || ''}`} className="flex items-center group">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100 overflow-hidden shadow-sm group-hover:shadow transition-shadow">
-                        {postAvatar ? (
-                          <img src={postAvatar} alt={postUsername} className="w-full h-full object-cover" />
-                        ) : (
-                          postUsername.charAt(0)
-                        )}
-                      </div>
-                      <span className="font-bold text-gray-700 group-hover:text-blue-600 transition-colors">
-                        {postUsername}
-                      </span>
-                    </Link>
+                    <div className="flex items-center justify-between w-full">
+                      <Link
+                        href={`/profile?userId=${postUserIdStr || ''}`}
+                        className="flex items-center group"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100 overflow-hidden shadow-sm group-hover:shadow transition-shadow">
+                          {postAvatar ? (
+                            <img
+                              src={postAvatar}
+                              alt={postUsername}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            postUsername.charAt(0)
+                          )}
+                        </div>
+
+                        <span className="font-bold text-gray-700 group-hover:text-blue-600 transition-colors">
+                          {postUsername}
+                        </span>
+                      </Link>
+
+                      {postUserIdStr && (
+                        <FollowButton targetUserId={String(postUserIdStr)} />
+                      )}
+                    </div>
                   );
                 })()}
               </div>

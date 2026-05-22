@@ -131,8 +131,61 @@ function ProfileContent() {
   const [userEmail, setUserEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const [skills, setSkills] = useState<string[]>([]);
+
+  const handleFollowToggle = async () => {
+    if (followLoading) return;
+
+    setFollowLoading(true);
+
+    try {
+      // backend 使用時
+      if (isUsingBackend()) {
+        const token = localStorage.getItem("access_token");
+
+        // 例:
+        // POST /follow/:userId
+        // DELETE /follow/:userId
+
+        const targetUserId = userIdParam;
+
+        if (!targetUserId) return;
+
+        const method = isFollowing ? "DELETE" : "POST";
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/${targetUserId}`,
+          {
+            method,
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("フォロー更新に失敗しました");
+        }
+      }
+
+      // UI更新
+      setIsFollowing((prev) => !prev);
+
+      setFollowersCount((prev) =>
+        isFollowing ? prev - 1 : prev + 1
+      );
+
+    } catch (err) {
+      console.error(err);
+      alert("フォロー処理に失敗しました");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   useEffect(() => {
     const storedSkills = localStorage.getItem("user_skills");
@@ -379,12 +432,30 @@ function ProfileContent() {
               </div>
 
               {isMyProfile && (
-                <div className="mt-4">
-                  <Link href="/profile/edit">
-                    <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
-                      プロフィールを編集
+                <div className="mt-4 flex gap-3">
+                  {isMyProfile ? (
+                    <Link href="/profile/edit">
+                      <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
+                        プロフィールを編集
+                      </button>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className={`font-bold px-5 py-2 rounded-full transition text-sm shadow-sm ${
+                        isFollowing
+                          ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                          : "bg-blue-500 text-white hover:bg-blue-600"
+                      }`}
+                    >
+                      {followLoading
+                        ? "処理中..."
+                        : isFollowing
+                        ? "フォロー中"
+                        : "フォローする"}
                     </button>
-                  </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -408,6 +479,23 @@ function ProfileContent() {
               <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px]">
                 {bio}
               </p>
+            </div>
+
+            {/* フォロワー情報 */}
+            <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+              <div>
+                <span className="font-bold text-gray-900">
+                  {followersCount}
+                </span>{" "}
+                フォロワー
+              </div>
+
+              <div>
+                <span className="font-bold text-gray-900">
+                  {creationPosts.length + questionPosts.length}
+                </span>{" "}
+                投稿
+              </div>
             </div>
 
           </div>

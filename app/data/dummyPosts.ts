@@ -10,6 +10,7 @@ export type Post = {
   imageUrl?: string;
   images?: PostImage[];
   itemType: "creation" | "question"; // 制作物か質問か
+  userId?: string; // 投稿者のユーザーID
   created_at?: string; // 投稿日時
   score?: number; // 評価数（いいねなど）
   tags?: string[]; // タグ
@@ -39,6 +40,7 @@ export const dummyPosts: Post[] = [
         order: 3,
       },
     ],
+    userId: "user-1",
     created_at: "2026-04-20T10:00:00Z",
     score: 12,
     tags: ["React", "Next.js", "初心者"],
