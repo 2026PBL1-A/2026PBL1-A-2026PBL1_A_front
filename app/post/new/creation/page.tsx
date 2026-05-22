@@ -16,6 +16,7 @@ export default function CreateCreationPage() {
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [workUrl, setWorkUrl] = useState("");
 
   const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
   const [headerImage, setHeaderImage] = useState<File | null>(null);
@@ -123,6 +124,7 @@ export default function CreateCreationPage() {
         const payload = {
           title,
           content,
+          work_url: workUrl,
           ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
         };
 
@@ -255,8 +257,8 @@ export default function CreateCreationPage() {
                   type="button"
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1 rounded-full text-sm transition ${selectedTags.includes(tag)
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                 >
                   #{tag}
@@ -326,6 +328,25 @@ export default function CreateCreationPage() {
               onChange={(e) => setContent(e.target.value)}
               required
             />
+          </div>
+
+          {/* 作品URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              作品URL
+            </label>
+
+            <input
+              type="url"
+              className="w-full border border-gray-300 text-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://example.com"
+              value={workUrl}
+              onChange={(e) => setWorkUrl(e.target.value)}
+            />
+
+            <p className="text-xs text-gray-500 mt-1">
+              GitHub / Vercel / YouTube / Figma など
+            </p>
           </div>
 
           {/* 画像 */}
@@ -632,6 +653,7 @@ export default function CreateCreationPage() {
                 {title || "タイトルプレビュー"}
               </h1>
 
+
               {/* 本文上部 */}
               {topImage && (
                 <Image
@@ -656,6 +678,17 @@ export default function CreateCreationPage() {
                   height={200}
                   className="rounded-xl border w-full max-h-[350px] object-contain"
                 />
+              )}
+
+              {workUrl && (
+                <a
+                  href={workUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 underline break-all mb-4 inline-block"
+                >
+                  {workUrl}
+                </a>
               )}
 
             </div>
