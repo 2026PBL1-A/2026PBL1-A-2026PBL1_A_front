@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
-import { getAllTags, createTag} from "@/lib/profileApi";
+import { getAllTags, createTag } from "@/lib/profileApi";
 import Image from "next/image";
 
 export default function CreateCreationPage() {
@@ -16,7 +16,7 @@ export default function CreateCreationPage() {
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  
+
   const [thumbnailImage, setThumbnailImage] = useState<File | null>(null);
   const [headerImage, setHeaderImage] = useState<File | null>(null);
   const [topImage, setTopImage] = useState<File | null>(null);
@@ -254,11 +254,10 @@ export default function CreateCreationPage() {
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1 rounded-full text-sm transition ${
-                    selectedTags.includes(tag)
+                  className={`px-3 py-1 rounded-full text-sm transition ${selectedTags.includes(tag)
                       ? "bg-blue-500 text-white"
                       : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   #{tag}
                 </button>
@@ -424,25 +423,25 @@ export default function CreateCreationPage() {
           </div>
 
           {/* 画像選択モーダル */}
-            {isImageModalOpen && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-                  {/* ヘッダー */}
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold">
-                      画像を選択
-                    </h2>
+          {isImageModalOpen && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+                {/* ヘッダー */}
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold">
+                    画像を選択
+                  </h2>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsImageModalOpen(false)}
-                      className="text-gray-500 hover:text-black text-xl"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsImageModalOpen(false)}
+                    className="text-gray-500 hover:text-black text-xl"
+                  >
+                    ×
+                  </button>
+                </div>
 
-                  <div className="space-y-4">
+                <div className="space-y-4">
 
                   {/* サムネイル */}
                   <div>
@@ -582,41 +581,41 @@ export default function CreateCreationPage() {
 
                 </div>
 
-                  
 
-                  {/* ボタン */}
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setIsImageModalOpen(false)}
-                      className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-                    >
-                      キャンセル
-                    </button>
 
-                    <button
-                      type="button"
-                        onClick={() => {
-                          setThumbnailImage(tempThumbnailImage);
-                          setHeaderImage(tempHeaderImage);
-                          setTopImage(tempTopImage);
-                          setBottomImage(tempBottomImage);
+                {/* ボタン */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsImageModalOpen(false)}
+                    className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    キャンセル
+                  </button>
 
-                          setIsImageModalOpen(false);
-                        }}
-                        className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                      >
-                      決定
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThumbnailImage(tempThumbnailImage);
+                      setHeaderImage(tempHeaderImage);
+                      setTopImage(tempTopImage);
+                      setBottomImage(tempBottomImage);
+
+                      setIsImageModalOpen(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                  >
+                    決定
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="mt-10 bg-white rounded-2xl shadow border">
+          <div className="mt-10 bg-white rounded-2xl shadow border">
 
             <div className="p-6">
-              
+
 
               {/* ヘッダー */}
               {displayHeaderImage && (

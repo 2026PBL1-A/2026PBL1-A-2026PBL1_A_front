@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { fetchWithAuth, isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
 import AnswersScoreButton from "./AnswersScoreButton";
+import Link from "next/link";
 
 export type AnswerData = {
   id: string | number;
@@ -14,6 +15,7 @@ export type AnswerData = {
   userid?: any;
   userId?: any;
   username?: string;
+  avatarUrl?: string;
   score?: number;
 };
 
@@ -113,6 +115,26 @@ export default function AnswersSection({
         if (response.ok) {
           const data = await response.json();
           let fetchedAnswers = Array.isArray(data) ? data : (data.comments || data.answers || []);
+
+          if (isUsingBackend()) {
+            try {
+              const { getAllProfiles } = await import("@/lib/profileApi");
+              const profiles = await getAllProfiles().catch(() => []);
+              fetchedAnswers = fetchedAnswers.map((c: any) => {
+                const uId = c.user_id?.id || c.user_id || c.userId?.id || c.userId || c.userid?.id || c.userid;
+                if (uId && profiles.length > 0) {
+                  const p = profiles.find((pr) => pr.user && pr.user.id === uId);
+                  if (p) {
+                    c.username = p.user?.username || c.username;
+                    c.avatarUrl = p.profile?.avatarUrl || (p.profile as any)?.avatar_url;
+                  }
+                }
+                return c;
+              });
+            } catch (e) {
+              console.error("[AnswersSection] プロフィール情報取得エラー:", e);
+            }
+          }
 
           if (isUsingBackend() && itemType === "question") {
             fetchedAnswers = await Promise.all(fetchedAnswers.map(async (c: any) => {
@@ -420,10 +442,16 @@ export default function AnswersSection({
               <li key={c.id || index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-bold text-gray-800 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100">
-                      {getUsername(c)[0]}
-                    </div>
-                    {getUsername(c)}
+                    <Link href={`/profile?userId=${c.user_id?.id || c.user_id || c.userId?.id || c.userId || c.userid?.id || c.userid || ''}`} className="flex items-center hover:text-blue-600 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100 overflow-hidden">
+                        {c.avatarUrl ? (
+                          <img src={c.avatarUrl.startsWith('http') ? c.avatarUrl : `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${c.avatarUrl}`} alt={getUsername(c)} className="w-full h-full object-cover" />
+                        ) : (
+                          getUsername(c)[0]
+                        )}
+                      </div>
+                      {getUsername(c)}
+                    </Link>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-xs text-gray-400 font-medium">{formatDate(c.created_at)}</div>
