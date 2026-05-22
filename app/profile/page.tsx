@@ -132,6 +132,27 @@ function ProfileContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [followModalOpen, setFollowModalOpen] = useState(false);
+  const [followModalType, setFollowModalType] = useState<"following" | "followers">("following");
+
+  const dummyFollowing = [
+    { id: "101", name: "山田 太郎", icon: "https://i.pravatar.cc/150?u=yamada" },
+    { id: "102", name: "佐藤 エンジニア", icon: "https://i.pravatar.cc/150?u=sato" },
+    { id: "103", name: "Tech Student", icon: "https://i.pravatar.cc/150?u=tech" },
+  ];
+
+  const dummyFollowers = [
+    { id: "104", name: "鈴木 フロントエンド", icon: "https://i.pravatar.cc/150?u=suzuki" },
+    { id: "105", name: "Design Taro", icon: "https://i.pravatar.cc/150?u=design" },
+    { id: "106", name: "高橋 開発", icon: "https://i.pravatar.cc/150?u=takahashi" },
+    { id: "107", name: "田中 バックエンド", icon: "https://i.pravatar.cc/150?u=tanaka" },
+  ];
+
+  const openFollowModal = (type: "following" | "followers") => {
+    setFollowModalType(type);
+    setFollowModalOpen(true);
+  };
+
   const [skills, setSkills] = useState<string[]>([]);
 
   useEffect(() => {
@@ -401,6 +422,18 @@ function ProfileContent() {
                   <span>更新: {lastUpdated}</span>
                 </div>
               </div>
+
+              {/* フォロー・フォロワー数 */}
+              <div className="flex items-center gap-4 mt-3">
+                <button onClick={() => openFollowModal('following')} className="flex items-center gap-1 hover:underline focus:outline-none group">
+                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{dummyFollowing.length}</span>
+                  <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロー中</span>
+                </button>
+                <button onClick={() => openFollowModal('followers')} className="flex items-center gap-1 hover:underline focus:outline-none group">
+                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{dummyFollowers.length}</span>
+                  <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロワー</span>
+                </button>
+              </div>
             </div>
 
             {/* 自己紹介文 */}
@@ -505,6 +538,37 @@ function ProfileContent() {
           </div>
         </div>
       </div>
+
+      {/* フォロー/フォロワー モーダル */}
+      {followModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                {followModalType === "following" ? "フォロー中" : "フォロワー"}
+              </h2>
+              <button onClick={() => setFollowModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1.5 transition">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2">
+              {(followModalType === "following" ? dummyFollowing : dummyFollowers).map((user) => (
+                <Link key={user.id} href={`/profile?userId=${user.id}`} onClick={() => setFollowModalOpen(false)} className="flex items-center gap-3 px-3 py-3 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer group">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors">
+                    <img src={user.icon} alt={user.name} className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-800 group-hover:text-blue-600 truncate flex-1 transition-colors">
+                    {user.name}
+                  </span>
+                  <button className="px-4 py-1.5 text-xs font-bold rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm shrink-0">
+                    {followModalType === "following" ? "フォロー中" : "フォロー"}
+                  </button>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

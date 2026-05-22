@@ -91,6 +91,15 @@ function PostCard({ post }: { post: any }) {
   );
 }
 
+const dummyFollowedUsers = [
+  { id: "101", name: "山田 太郎", icon: "https://i.pravatar.cc/150?u=yamada" },
+  { id: "102", name: "佐藤 エンジニア", icon: "https://i.pravatar.cc/150?u=sato" },
+  { id: "103", name: "Tech Student", icon: "https://i.pravatar.cc/150?u=tech" },
+  { id: "104", name: "鈴木 フロントエンド", icon: "https://i.pravatar.cc/150?u=suzuki" },
+  { id: "105", name: "Design Taro", icon: "https://i.pravatar.cc/150?u=design" },
+  { id: "106", name: "高橋 開発", icon: "https://i.pravatar.cc/150?u=takahashi" },
+];
+
 export default function Page() {
   const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
   const [posts, setPosts] = useState<Post[]>(dummyPosts);
@@ -358,19 +367,39 @@ export default function Page() {
   );
 
   return (
-    <div>
-      <div className="fixed top-4 left-4 z-10">
-        <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 rounded shadow-sm backdrop-blur-sm">
-          {currentUserName}
-        </span>
-      </div>
-      <Menu />
+    <div className="flex min-h-screen bg-white">
+      {/* サイドバー (PCでのみ表示) */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 overflow-y-auto pb-24">
+        <h3 className="text-sm font-bold text-gray-500 mb-4 px-2 uppercase tracking-wider">フォロー中</h3>
+        <div className="space-y-1">
+          {dummyFollowedUsers.map((user) => (
+            <Link key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
+              <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors">
+                <img src={user.icon} alt={user.name} className="w-full h-full object-cover" />
+              </div>
+              <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate flex-1 transition-colors">
+                {user.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </aside>
 
-      {/* 投稿一覧エリア */}
-      <div className="mt-16 px-4 pb-20 max-w-4xl mx-auto">
+      {/* メインコンテンツ */}
+      <div className="flex-1 md:ml-64 w-full">
+        {/* ヘッダー */}
+        <div className="fixed top-4 left-4 md:left-[272px] z-10 transition-all">
+          <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 rounded shadow-sm backdrop-blur-sm border border-gray-100">
+            {currentUserName}
+          </span>
+        </div>
+        <Menu />
 
-        {/* キーワード検索エリア */}
-        <div className="mb-6">
+        {/* 投稿一覧エリア */}
+        <div className="mt-16 px-4 pb-20 max-w-5xl mx-auto w-full">
+
+          {/* キーワード検索エリア */}
+          <div className="mb-6">
           <div className="relative">
             <input
               type="text"
@@ -642,6 +671,7 @@ export default function Page() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
