@@ -155,12 +155,10 @@ function ProfileContent() {
 
         if (!targetUserId) return;
 
-        const method = isFollowing ? "DELETE" : "POST";
-
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/${targetUserId}`,
+          `/api/follows/${targetUserId}`,
           {
-            method,
+            method: "PATCH",
             headers: {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
