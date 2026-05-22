@@ -36,14 +36,21 @@ export default function FollowButton({ targetUserId }: Props) {
 
       setIsFollowing(!isFollowing);
 
-      /**
-       * 将来ここをAPI化
-       *
-       * await fetch("/api/follow", {
-       *   method: "POST",
-       *   body: JSON.stringify({ targetUserId }),
-       * })
-       */
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        const response = await fetch(`/api/follows/${targetUserId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error("フォロー処理に失敗しました");
+        }
+      }
+    } catch (error) {
+      console.error("エラーが発生しました:", error);
     } finally {
       setLoading(false);
     }
