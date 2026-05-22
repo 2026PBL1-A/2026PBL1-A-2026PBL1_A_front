@@ -66,6 +66,24 @@ export default async function PostDetailPage({
       } catch (err) {
         console.error("画像取得エラー:", err);
       }
+
+      // プロフィール情報を取得して、ユーザー名とアイコンを post オブジェクトにマージする
+      try {
+        const postUserId = post.user_id || post.userId?.id || post.userid?.id;
+        if (postUserId) {
+          const profileRes = await fetch(`${process.env.BACKEND_API_URL || "http://localhost:5000"}/profiles`, { cache: "no-store" });
+          if (profileRes.ok) {
+            const profiles = await profileRes.json();
+            const foundProfile = profiles.find((p: any) => p.user && p.user.id === postUserId);
+            if (foundProfile) {
+              post.user = foundProfile.user; // { id, username, email }
+              post.user.profile = foundProfile.profile; // { avatarUrl, etc. }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("プロフィール取得エラー:", err);
+      }
     }
   }
 
@@ -130,6 +148,37 @@ export default async function PostDetailPage({
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
                 {post.title}
               </h1>
+
+              {/* 投稿者情報 */}
+              <div className="flex items-center mb-6">
+                {(() => {
+                  const postUserIdStr = post.userId?.id ?? post.userId ?? post.userid?.id ?? post.userid ?? post.user_id?.id ?? post.user_id;
+                  let postUsername = post.user?.username ?? post.userId?.username ?? post.userid?.username ?? post.user_id?.username ?? post.username ?? "名無しユーザー";
+                  
+                  // プロフィールの情報（avatarUrlとavatar_urlの両方を確認）
+                  const pProfile = post.user?.profile ?? post.userId?.profile ?? post.user_id?.profile;
+                  let postAvatar = pProfile?.avatarUrl ?? (pProfile as any)?.avatar_url ?? post.avatarUrl ?? post.avatar_url ?? null;
+                  
+                  if (postAvatar && !postAvatar.startsWith('http')) {
+                    postAvatar = `${process.env.BACKEND_API_URL || "http://localhost:5000"}${postAvatar}`;
+                  }
+
+                  return (
+                    <Link href={`/profile?userId=${postUserIdStr || ''}`} className="flex items-center group">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100 overflow-hidden shadow-sm group-hover:shadow transition-shadow">
+                        {postAvatar ? (
+                          <img src={postAvatar} alt={postUsername} className="w-full h-full object-cover" />
+                        ) : (
+                          postUsername.charAt(0)
+                        )}
+                      </div>
+                      <span className="font-bold text-gray-700 group-hover:text-blue-600 transition-colors">
+                        {postUsername}
+                      </span>
+                    </Link>
+                  );
+                })()}
+              </div>
 
               {/* メタデータ */}
               <div className="flex items-center justify-between text-gray-500 text-sm">

@@ -1,3 +1,8 @@
+export type PostImage = {
+  url: string;
+  order: number;
+};
+
 export type Post = {
   id: string;
   title: string;

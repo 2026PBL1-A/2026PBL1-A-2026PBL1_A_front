@@ -27,11 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // クライアント側でのみ localStorage にアクセス
   useEffect(() => {
-    // 開発環境では起動時に localStorage をクリア（古いテストデータを排除）
-    if (process.env.NODE_ENV === 'development') {
-      localStorage.clear();
-    }
-    
     // ページ再読み込み時もログイン状態を復元
     const storedToken = localStorage.getItem("access_token");
     setToken(storedToken);
