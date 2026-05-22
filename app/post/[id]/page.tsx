@@ -171,6 +171,41 @@ export default async function PostDetailPage({
               </figure>
             )}
 
+            {/* 作品URL */}
+            {post.work_url && (
+              <div className="mb-8">
+                <a
+                  href={post.work_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition shadow-sm break-all"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m5.656-5.656a4 4 0 015.656 5.656l-1.5 1.5"
+                    />
+                  </svg>
+
+                  <span className="truncate">
+                    作品を見る
+                  </span>
+                </a>
+
+                <p className="text-sm text-gray-500 mt-2 break-all">
+                  {post.work_url}
+                </p>
+              </div>
+            )}
+
             <hr className="border-gray-100 mb-10" />
 
             {/* コメント・回答エリア */}
