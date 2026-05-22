@@ -431,32 +431,29 @@ function ProfileContent() {
                 )}
               </div>
 
-              {isMyProfile && (
-                <div className="mt-4 flex gap-3">
-                  {isMyProfile ? (
-                    <Link href="/profile/edit">
-                      <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
-                        プロフィールを編集
-                      </button>
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={handleFollowToggle}
-                      disabled={followLoading}
-                      className={`font-bold px-5 py-2 rounded-full transition text-sm shadow-sm ${
-                        isFollowing
-                          ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                          : "bg-blue-500 text-white hover:bg-blue-600"
-                      }`}
-                    >
-                      {followLoading
-                        ? "処理中..."
-                        : isFollowing
-                        ? "フォロー中"
-                        : "フォローする"}
-                    </button>
-                  )}
-                </div>
+              <div className="mt-4 flex gap-3">
+              {isMyProfile ? (
+                <Link href="/profile/edit">
+                  <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
+                    プロフィールを編集
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={followLoading}
+                  className={`font-bold px-5 py-2 rounded-full transition text-sm shadow-sm ${
+                    isFollowing
+                      ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                >
+                  {followLoading
+                    ? "処理中..."
+                    : isFollowing
+                    ? "フォロー中"
+                    : "フォローする"}
+                </button>
               )}
             </div>
 
@@ -497,7 +494,6 @@ function ProfileContent() {
                 投稿
               </div>
             </div>
-
           </div>
 
           {/* タブナビゲーション */}
@@ -594,9 +590,9 @@ function ProfileContent() {
         </div>
       </div>
     </div>
+    </div>
   );
 }
-
 export default function ProfilePage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50 pt-20 text-center font-bold">Loading...</div>}>
