@@ -6,7 +6,7 @@ import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
 import Image from "next/image";
 import { formatDate } from "@/lib/formatDate";
-import { isUsingBackend } from "@/lib/api";
+import { isUsingBackend, apiCall, fetchWithAuth } from "@/lib/api";
 import {
   createProfile,
   getAllProfiles,
@@ -145,29 +145,13 @@ function ProfileContent() {
     try {
       // backend 使用時
       if (isUsingBackend()) {
-        const token = localStorage.getItem("access_token");
-
-        // 例:
-        // POST /follow/:userId
-        // DELETE /follow/:userId
-
-        const targetUserId = userIdParam;
-
-        if (!targetUserId) return;
-
-        const response = await fetch(
-          `/api/follows/${targetUserId}`,
-          {
-            method: "PATCH",
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("フォロー更新に失敗しました");
+        if (!userIdParam) {
+          throw new Error("フォロー対象のユーザーIDが不明です");
         }
+        // apiCall を使うことで Authorization ヘッダーが自動付与され、401 ならログインへリダイレクトされる
+        await apiCall(`/follows/${userIdParam}`, {
+          method: "PATCH",
+        });
       }
 
       // UI更新
@@ -362,6 +346,27 @@ function ProfileContent() {
 
         setUserPosts(mappedPosts);
 
+        // フォロワー情報を取得してフォロー状態を初期化する
+        if (targetUserId && !currentIsMyProfile) {
+          try {
+            const followers = await fetchWithAuth(`/follows/followers/${targetUserId}`);
+            if (followers.ok) {
+              const followersList = await followers.json();
+              setFollowersCount(followersList.length);
+              // 自分がフォロワー一覧にいるかチェック
+              const myUserId = localStorage.getItem("user_id");
+              if (myUserId) {
+                const amFollowing = followersList.some(
+                  (f: { id: string }) => f.id === myUserId
+                );
+                setIsFollowing(amFollowing);
+              }
+            }
+          } catch {
+            // フォロワー取得に失敗してもプロフィール表示は続行
+          }
+        }
+
         // 投稿と質問の両方から有効な日時だけで最新を計算する
         const allPosts = [...profilePosts, ...profileQuestions];
         if (allPosts.length > 0) {
@@ -454,6 +459,7 @@ function ProfileContent() {
                 </button>
               )}
             </div>
+            </div>
 
             {/* 基本情報（表示名・IDなど） */}
             <div className="mb-4">
@@ -492,7 +498,6 @@ function ProfileContent() {
                 投稿
               </div>
             </div>
-          </div>
 
           {/* タブナビゲーション */}
           <div className="flex border-b border-gray-200 px-2">
