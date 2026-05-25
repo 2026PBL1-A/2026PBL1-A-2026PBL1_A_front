@@ -91,14 +91,7 @@ function PostCard({ post }: { post: any }) {
   );
 }
 
-const dummyFollowedUsers = [
-  { id: "101", name: "山田 太郎", icon: "https://i.pravatar.cc/150?u=yamada" },
-  { id: "102", name: "佐藤 エンジニア", icon: "https://i.pravatar.cc/150?u=sato" },
-  { id: "103", name: "Tech Student", icon: "https://i.pravatar.cc/150?u=tech" },
-  { id: "104", name: "鈴木 フロントエンド", icon: "https://i.pravatar.cc/150?u=suzuki" },
-  { id: "105", name: "Design Taro", icon: "https://i.pravatar.cc/150?u=design" },
-  { id: "106", name: "高橋 開発", icon: "https://i.pravatar.cc/150?u=takahashi" },
-];
+
 
 export default function Page() {
   const [currentUserName, setCurrentUserName] = useState("ゲストユーザー");
@@ -113,6 +106,7 @@ export default function Page() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [tempSelectedTagNames, setTempSelectedTagNames] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<Array<{ id: string; tag: string }>>([]);   // 全タグのリスト
+  const [followingList, setFollowingList] = useState<{ id: string; username: string; iconUrl?: string | null }[]>([]);
 
   // ページネーション用ステート
   const [currentPage, setCurrentPage] = useState(1);
@@ -134,6 +128,27 @@ export default function Page() {
     if (storedUserName) {
       setCurrentUserName(storedUserName);
     }
+    
+    // フォロー一覧を取得
+    const fetchFollowing = async () => {
+      try {
+        if (isUsingBackend()) {
+          const token = localStorage.getItem("access_token");
+          const userId = localStorage.getItem("user_id");
+          if (token && userId) {
+            const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follows/following/${userId}`, { headers });
+            if (res.ok) {
+              const followingData = await res.json();
+              setFollowingList(followingData);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[Following] 取得エラー:", err);
+      }
+    };
+    fetchFollowing();
 
     // 投稿データを取得（ソース切り替え）
     const fetchPosts = async () => {
@@ -372,13 +387,17 @@ export default function Page() {
       <aside className="hidden md:flex flex-col w-64 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 overflow-y-auto pb-24">
         <h3 className="text-sm font-bold text-gray-500 mb-4 px-2 uppercase tracking-wider">フォロー中</h3>
         <div className="space-y-1">
-          {dummyFollowedUsers.map((user) => (
+          {followingList.map((user) => (
             <Link key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
-              <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors">
-                <img src={user.icon} alt={user.name} className="w-full h-full object-cover" />
+              <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors flex items-center justify-center">
+                {user.iconUrl ? (
+                  <img src={`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${user.iconUrl}`} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-gray-500 font-bold text-xs">{user.username?.charAt(0)}</span>
+                )}
               </div>
               <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate flex-1 transition-colors">
-                {user.name}
+                {user.username}
               </span>
             </Link>
           ))}

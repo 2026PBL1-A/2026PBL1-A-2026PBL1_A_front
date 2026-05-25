@@ -138,18 +138,8 @@ function ProfileContent() {
   const [followModalOpen, setFollowModalOpen] = useState(false);
   const [followModalType, setFollowModalType] = useState<"following" | "followers">("following");
 
-  const dummyFollowing = [
-    { id: "101", name: "山田 太郎", icon: "https://i.pravatar.cc/150?u=yamada" },
-    { id: "102", name: "佐藤 エンジニア", icon: "https://i.pravatar.cc/150?u=sato" },
-    { id: "103", name: "Tech Student", icon: "https://i.pravatar.cc/150?u=tech" },
-  ];
-
-  const dummyFollowers = [
-    { id: "104", name: "鈴木 フロントエンド", icon: "https://i.pravatar.cc/150?u=suzuki" },
-    { id: "105", name: "Design Taro", icon: "https://i.pravatar.cc/150?u=design" },
-    { id: "106", name: "高橋 開発", icon: "https://i.pravatar.cc/150?u=takahashi" },
-    { id: "107", name: "田中 バックエンド", icon: "https://i.pravatar.cc/150?u=tanaka" },
-  ];
+  const [followingList, setFollowingList] = useState<{ id: string; username: string; iconUrl?: string | null }[]>([]);
+  const [followersList, setFollowersList] = useState<{ id: string; username: string; iconUrl?: string | null }[]>([]);
 
   const openFollowModal = (type: "following" | "followers") => {
     setFollowModalType(type);
@@ -367,24 +357,34 @@ function ProfileContent() {
 
         setUserPosts(mappedPosts);
 
-        // フォロワー情報を取得してフォロー状態を初期化する
-        if (targetUserId && !currentIsMyProfile) {
+        // フォロワー情報とフォロー情報を取得する
+        if (targetUserId) {
           try {
-            const followers = await fetchWithAuth(`/follows/followers/${targetUserId}`);
-            if (followers.ok) {
-              const followersList = await followers.json();
-              setFollowersCount(followersList.length);
-              // 自分がフォロワー一覧にいるかチェック
-              const myUserId = localStorage.getItem("user_id");
-              if (myUserId) {
-                const amFollowing = followersList.some(
-                  (f: { id: string }) => f.id === myUserId
-                );
-                setIsFollowing(amFollowing);
+            const [followersRes, followingRes] = await Promise.all([
+              fetchWithAuth(`/follows/followers/${targetUserId}`),
+              fetchWithAuth(`/follows/following/${targetUserId}`)
+            ]);
+            
+            if (followersRes.ok) {
+              const fList = await followersRes.json();
+              setFollowersList(fList);
+              setFollowersCount(fList.length);
+              
+              if (!currentIsMyProfile) {
+                const myUserId = localStorage.getItem("user_id");
+                if (myUserId) {
+                  const amFollowing = fList.some((f: any) => f.id === myUserId);
+                  setIsFollowing(amFollowing);
+                }
               }
             }
+            
+            if (followingRes.ok) {
+              const followingData = await followingRes.json();
+              setFollowingList(followingData);
+            }
           } catch {
-            // フォロワー取得に失敗してもプロフィール表示は続行
+            // フォロー情報取得に失敗してもプロフィール表示は続行
           }
         }
 
@@ -411,7 +411,7 @@ function ProfileContent() {
     };
 
     fetchProfileAndPosts();
-  }, []);
+  }, [userIdParam]);
 
   const creationPosts = userPosts.filter(post => post.itemType === 'creation');
   const questionPosts = userPosts.filter(post => post.itemType === 'question');
@@ -495,16 +495,22 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {/* フォロー・フォロワー数 */}
-              <div className="flex items-center gap-4 mt-3">
+              {/* フォロー・フォロワー・投稿数 */}
+              <div className="flex items-center gap-6 mt-3 mb-4">
                 <button onClick={() => openFollowModal('following')} className="flex items-center gap-1 hover:underline focus:outline-none group">
-                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{dummyFollowing.length}</span>
+                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{followingList.length}</span>
                   <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロー中</span>
                 </button>
                 <button onClick={() => openFollowModal('followers')} className="flex items-center gap-1 hover:underline focus:outline-none group">
-                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{dummyFollowers.length}</span>
+                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{followersCount}</span>
                   <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロワー</span>
                 </button>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-gray-900">
+                    {creationPosts.length + questionPosts.length}
+                  </span>
+                  <span className="text-sm text-gray-500">投稿数</span>
+                </div>
               </div>
             </div>
 
@@ -513,23 +519,6 @@ function ProfileContent() {
               <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px]">
                 {bio}
               </p>
-            </div>
-
-            {/* フォロワー情報 */}
-            <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-              <div>
-                <span className="font-bold text-gray-900">
-                  {followersCount}
-                </span>{" "}
-                フォロワー
-              </div>
-
-              <div>
-                <span className="font-bold text-gray-900">
-                  {creationPosts.length + questionPosts.length}
-                </span>{" "}
-                投稿
-              </div>
             </div>
 
           {/* タブナビゲーション */}
@@ -639,16 +628,20 @@ function ProfileContent() {
               </button>
             </div>
             <div className="overflow-y-auto p-2">
-              {(followModalType === "following" ? dummyFollowing : dummyFollowers).map((user) => (
+              {(followModalType === "following" ? followingList : followersList).map((user) => (
                 <Link key={user.id} href={`/profile?userId=${user.id}`} onClick={() => setFollowModalOpen(false)} className="flex items-center gap-3 px-3 py-3 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer group">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors">
-                    <img src={user.icon} alt={user.name} className="w-full h-full object-cover" />
+                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors flex items-center justify-center">
+                    {user.iconUrl ? (
+                      <img src={`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${user.iconUrl}`} alt={user.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-gray-500 font-bold">{user.username?.charAt(0)}</span>
+                    )}
                   </div>
                   <span className="text-sm font-bold text-gray-800 group-hover:text-blue-600 truncate flex-1 transition-colors">
-                    {user.name}
+                    {user.username}
                   </span>
                   <button className="px-4 py-1.5 text-xs font-bold rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm shrink-0">
-                    {followModalType === "following" ? "フォロー中" : "フォロー"}
+                    プロフィール
                   </button>
                 </Link>
               ))}
