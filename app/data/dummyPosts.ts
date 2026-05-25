@@ -11,6 +11,7 @@ export type Post = {
   images?: PostImage[];
   work_url?: string; // 作品URL
   itemType: "creation" | "question"; // 制作物か質問か
+  userId?: string; // 投稿者のユーザーID
   created_at?: string; // 投稿日時
   score?: number; // 評価数（いいねなど）
   tags?: string[]; // タグ
@@ -41,6 +42,7 @@ export const dummyPosts: Post[] = [
       },
     ],
     work_url: "https://sushida.net/play.html?soundless",
+    userId: "user-1",
     created_at: "2026-04-20T10:00:00Z",
     score: 12,
     tags: ["React", "Next.js", "初心者"],

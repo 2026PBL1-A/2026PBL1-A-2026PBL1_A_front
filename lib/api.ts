@@ -44,15 +44,6 @@ export async function fetchWithAuth(
     headers,
   });
 
-  // 401 Unauthorized の場合はログアウト処理
-  if (response.status === 401) {
-    if (typeof window !== "undefined") {
-      // 期限切れ/無効tokenの状態を残さないように削除してログイン画面へ戻す
-      localStorage.removeItem("access_token");
-      window.location.href = "/login";
-    }
-  }
-
   return response;
 }
 
@@ -66,12 +57,31 @@ export async function apiCall<T>(
   // 認証ヘッダー付与・401処理込みの低レベル関数を利用
   const response = await fetchWithAuth(endpoint, options);
 
+  // 401 Unauthorized の場合はログアウト処理
+  if (response.status === 401) {
+    if (typeof window !== "undefined") {
+      // 期限切れ/無効tokenの状態を残さないように削除してログイン画面へ戻す
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
+    }
+    // リダイレクトが走るまで待機するためPromiseをブロックさせる
+    return new Promise(() => {}) as Promise<T>;
+  }
+
   if (!response.ok) {
     // APIごとのエラーメッセージを優先し、なければHTTPステータスを表示
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API Error: ${response.status}`);
+    const errorMsg = errorData.message || `API Error: ${response.status}`;
+    console.error("API Error Response:", response.status, errorData);
+    throw new Error(errorMsg);
+  }
+
+  // レスポンスがない（204 No Contentなど）場合も考慮
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
   }
 
   // 呼び出し側で型を指定して受け取る
-  return response.json();
+  return JSON.parse(text);
 }

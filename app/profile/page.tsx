@@ -6,7 +6,7 @@ import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
 import Image from "next/image";
 import { formatDate } from "@/lib/formatDate";
-import { isUsingBackend } from "@/lib/api";
+import { isUsingBackend, apiCall, fetchWithAuth } from "@/lib/api";
 import {
   createProfile,
   getAllProfiles,
@@ -131,6 +131,9 @@ function ProfileContent() {
   const [userEmail, setUserEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const [followModalOpen, setFollowModalOpen] = useState(false);
   const [followModalType, setFollowModalType] = useState<"following" | "followers">("following");
@@ -154,6 +157,38 @@ function ProfileContent() {
   };
 
   const [skills, setSkills] = useState<string[]>([]);
+
+  const handleFollowToggle = async () => {
+    if (followLoading) return;
+
+    setFollowLoading(true);
+
+    try {
+      // backend 使用時
+      if (isUsingBackend()) {
+        if (!userIdParam) {
+          throw new Error("フォロー対象のユーザーIDが不明です");
+        }
+        // apiCall を使うことで Authorization ヘッダーが自動付与され、401 ならログインへリダイレクトされる
+        await apiCall(`/follows/${userIdParam}`, {
+          method: "PATCH",
+        });
+      }
+
+      // UI更新
+      setIsFollowing((prev) => !prev);
+
+      setFollowersCount((prev) =>
+        isFollowing ? prev - 1 : prev + 1
+      );
+
+    } catch (err) {
+      console.error(err);
+      alert("フォロー処理に失敗しました");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   useEffect(() => {
     const storedSkills = localStorage.getItem("user_skills");
@@ -332,6 +367,27 @@ function ProfileContent() {
 
         setUserPosts(mappedPosts);
 
+        // フォロワー情報を取得してフォロー状態を初期化する
+        if (targetUserId && !currentIsMyProfile) {
+          try {
+            const followers = await fetchWithAuth(`/follows/followers/${targetUserId}`);
+            if (followers.ok) {
+              const followersList = await followers.json();
+              setFollowersCount(followersList.length);
+              // 自分がフォロワー一覧にいるかチェック
+              const myUserId = localStorage.getItem("user_id");
+              if (myUserId) {
+                const amFollowing = followersList.some(
+                  (f: { id: string }) => f.id === myUserId
+                );
+                setIsFollowing(amFollowing);
+              }
+            }
+          } catch {
+            // フォロワー取得に失敗してもプロフィール表示は続行
+          }
+        }
+
         // 投稿と質問の両方から有効な日時だけで最新を計算する
         const allPosts = [...profilePosts, ...profileQuestions];
         if (allPosts.length > 0) {
@@ -399,15 +455,31 @@ function ProfileContent() {
                 )}
               </div>
 
-              {isMyProfile && (
-                <div className="mt-4">
-                  <Link href="/profile/edit">
-                    <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
-                      プロフィールを編集
-                    </button>
-                  </Link>
-                </div>
+              <div className="mt-4 flex gap-3">
+              {isMyProfile ? (
+                <Link href="/profile/edit">
+                  <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
+                    プロフィールを編集
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={followLoading}
+                  className={`font-bold px-5 py-2 rounded-full transition text-sm shadow-sm ${
+                    isFollowing
+                      ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                >
+                  {followLoading
+                    ? "処理中..."
+                    : isFollowing
+                    ? "フォロー中"
+                    : "フォローする"}
+                </button>
               )}
+            </div>
             </div>
 
             {/* 基本情報（表示名・IDなど） */}
@@ -443,7 +515,22 @@ function ProfileContent() {
               </p>
             </div>
 
-          </div>
+            {/* フォロワー情報 */}
+            <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+              <div>
+                <span className="font-bold text-gray-900">
+                  {followersCount}
+                </span>{" "}
+                フォロワー
+              </div>
+
+              <div>
+                <span className="font-bold text-gray-900">
+                  {creationPosts.length + questionPosts.length}
+                </span>{" "}
+                投稿
+              </div>
+            </div>
 
           {/* タブナビゲーション */}
           <div className="flex border-b border-gray-200 px-2">
@@ -570,9 +657,9 @@ function ProfileContent() {
         </div>
       )}
     </div>
+    </div>
   );
 }
-
 export default function ProfilePage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50 pt-20 text-center font-bold">Loading...</div>}>
