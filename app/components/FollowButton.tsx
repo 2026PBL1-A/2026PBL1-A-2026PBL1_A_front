@@ -10,9 +10,40 @@ type Props = {
 export default function FollowButton({ targetUserId }: Props) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // マウント時に自身のユーザーIDを取得
+  useEffect(() => {
+    let currentUserId = localStorage.getItem("user_id");
+    
+    // access_token からの取得をフォールバックとして試みる
+    if (!currentUserId) {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(window.atob(base64));
+          const id = payload.sub || payload.id || payload.userId;
+          if (id) {
+            currentUserId = String(id);
+            localStorage.setItem("user_id", currentUserId);
+          }
+        } catch (e) {
+          console.error("Token decode error:", e);
+        }
+      }
+    }
+    
+    setMyUserId(currentUserId);
+    setIsInitialized(true);
+  }, []);
 
   // マウント時にバックエンドからフォロー状態を取得する
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (!isUsingBackend()) {
       // バックエンド未使用時は localStorage から読み込む（フォールバック）
       const stored = localStorage.getItem("following_users");
@@ -23,7 +54,6 @@ export default function FollowButton({ targetUserId }: Props) {
       return;
     }
 
-    const myUserId = localStorage.getItem("user_id");
     if (!myUserId || myUserId === targetUserId) return;
 
     let isMounted = true;
@@ -34,7 +64,7 @@ export default function FollowButton({ targetUserId }: Props) {
         const res = await fetchWithAuth(`/follows/followers/${targetUserId}`);
         if (res.ok && isMounted) {
           const followers: { id: string }[] = await res.json();
-          setIsFollowing(followers.some((f) => f.id === myUserId));
+          setIsFollowing(followers.some((f) => String(f.id) === myUserId));
         }
       } catch {
         // 取得失敗時は初期値（false）のまま
@@ -46,7 +76,7 @@ export default function FollowButton({ targetUserId }: Props) {
     return () => {
       isMounted = false;
     };
-  }, [targetUserId]);
+  }, [targetUserId, myUserId, isInitialized]);
 
   const handleToggle = async () => {
     setLoading(true);
@@ -65,6 +95,10 @@ export default function FollowButton({ targetUserId }: Props) {
       setLoading(false);
     }
   };
+
+  // ログインしていない場合、初期化が終わっていない場合、または自身の投稿の場合はボタンを表示しない
+  if (!isInitialized) return null; // 初期ロード中はちらつき防止のため非表示
+  if (myUserId === targetUserId) return null; // 自分自身には表示しない
 
   return (
     <button
