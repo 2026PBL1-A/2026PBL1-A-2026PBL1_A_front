@@ -33,6 +33,7 @@ export default function CreateCreationPage() {
   const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
   const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [isTagWarning, setIsTagWarning] = useState(false);
   
   // 伏字置換済みのテキストを保持
   const [replacedTitle, setReplacedTitle] = useState("");
@@ -63,6 +64,27 @@ export default function CreateCreationPage() {
         ? prev.filter((t) => t !== tag)
         : [...prev, tag]
     );
+  };
+
+  const handleAddTag = async () => {
+    const trimmed = customTag.trim();
+    if (!trimmed || selectedTags.includes(trimmed)) return;
+
+    try {
+      const result = await checkBannedWords(trimmed);
+      if (result.hasChanges) {
+        const words = extractDetectedWords(trimmed, result.replaced);
+        setDetectedWords(words);
+        setIsTagWarning(true);
+        setIsWarningOpen(true);
+        return;
+      }
+    } catch (error) {
+      console.warn("タグチェックエラー:", error);
+    }
+
+    setSelectedTags([...selectedTags, trimmed]);
+    setCustomTag("");
   };
 
   useEffect(() => {
@@ -338,21 +360,7 @@ export default function CreateCreationPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  const trimmed = customTag.trim();
-
-                  if (
-                    trimmed &&
-                    !selectedTags.includes(trimmed)
-                  ) {
-                    setSelectedTags([
-                      ...selectedTags,
-                      trimmed,
-                    ]);
-                  }
-
-                  setCustomTag("");
-                }}
+                onClick={handleAddTag}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
               >
                 追加
@@ -778,9 +786,13 @@ export default function CreateCreationPage() {
       <InappropriateWordWarningModal
         isOpen={isWarningOpen}
         detectedWords={detectedWords}
-        onClose={() => setIsWarningOpen(false)}
+        onClose={() => {
+          setIsWarningOpen(false);
+          setIsTagWarning(false);
+        }}
         onProceed={handleProceedWithCensored}
         isSubmitting={isWarningSubmitting}
+        isBlockOnly={isTagWarning}
       />
     </div>
   );

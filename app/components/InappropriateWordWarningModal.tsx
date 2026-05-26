@@ -12,8 +12,9 @@ interface InappropriateWordWarningModalProps {
   isOpen: boolean;
   detectedWords: string[];
   onClose: () => void; // 修正に戻る
-  onProceed: () => void; // 伏字にして投稿する（続行）
+  onProceed?: () => void; // 伏字にして投稿する（続行）
   isSubmitting?: boolean; // 処理中かどうか
+  isBlockOnly?: boolean; // 続行を許可せず修正のみを促すモード
 }
 
 export default function InappropriateWordWarningModal({
@@ -22,6 +23,7 @@ export default function InappropriateWordWarningModal({
   onClose,
   onProceed,
   isSubmitting = false,
+  isBlockOnly = false,
 }: InappropriateWordWarningModalProps) {
   if (!isOpen) return null;
 
@@ -59,7 +61,9 @@ export default function InappropriateWordWarningModal({
           </h3>
           
           <p className="text-sm text-gray-600 text-center mb-6">
-            投稿内容に以下の不適切な言葉が含まれている可能性があります。ガイドラインに沿った内容に修正するか、伏字（***）に置き換えて投稿を続けることができます。
+            {isBlockOnly
+              ? "入力内容に以下の不適切な言葉が含まれている可能性があります。ガイドラインに沿った内容に修正してください。"
+              : "投稿内容に以下の不適切な言葉が含まれている可能性があります。ガイドラインに沿った内容に修正するか、伏字（***）に置き換えて投稿を続けることができます。"}
           </p>
 
           <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
@@ -86,28 +90,30 @@ export default function InappropriateWordWarningModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors disabled:opacity-50"
+              className={`px-4 py-2.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors disabled:opacity-50 ${isBlockOnly ? "w-full" : "flex-1"}`}
             >
               修正に戻る
             </button>
-            <button
-              type="button"
-              onClick={onProceed}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-70 flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  処理中...
-                </>
-              ) : (
-                '伏字にして投稿'
-              )}
-            </button>
+            {!isBlockOnly && onProceed && (
+              <button
+                type="button"
+                onClick={onProceed}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-70 flex items-center justify-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    処理中...
+                  </>
+                ) : (
+                  '伏字にして投稿'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
