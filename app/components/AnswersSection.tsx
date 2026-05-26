@@ -4,6 +4,8 @@ import { fetchWithAuth, isUsingBackend } from "@/lib/api";
 import { formatDate } from "@/lib/formatDate";
 import AnswersScoreButton from "./AnswersScoreButton";
 import Link from "next/link";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "./InappropriateWordWarningModal";
 
 export type AnswerData = {
   id: string | number;
@@ -45,6 +47,13 @@ export default function AnswersSection({
 
   // ドロップダウンメニュー開閉用のステート
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
+
+  // --- 不適切ワード警告モーダル用のステート ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [replacedText, setReplacedText] = useState("");
+  const [pendingAction, setPendingAction] = useState<"submit" | "edit" | null>(null);
 
   // 属性が質問の場合は「回答」、それ以外は「コメント」
   const label = itemType === "question" ? "回答" : "コメント";
@@ -172,14 +181,12 @@ export default function AnswersSection({
     fetchAnswers();
   }, [getEndpoint, label]);
 
-  const handleSubmit = async () => {
-    if (!inputText.trim()) return;
-
+  const submitAnswer = async (textToSubmit: string) => {
     if (!isUsingBackend()) {
       // ダミー送信
       const newAnswer: AnswerData = {
         id: Date.now().toString(),
-        content: inputText,
+        content: textToSubmit,
         created_at: new Date().toISOString(),
         username: "あなた (ダミー)",
       };
@@ -201,12 +208,12 @@ export default function AnswersSection({
         itemType === "question"
           ? {
             questionId: questionId ?? postId,
-            comment: inputText,
+            comment: textToSubmit,
             userId: userIdToUse
           }
           : {
             postId: postId,
-            comment: inputText,
+            comment: textToSubmit,
             userId: userIdToUse
           };
 
@@ -242,6 +249,30 @@ export default function AnswersSection({
     }
   };
 
+  const handleSubmit = async () => {
+    if (!inputText.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const result = await checkBannedWords(inputText);
+
+      if (result.hasChanges) {
+        setReplacedText(result.replaced);
+        setDetectedWords(extractDetectedWords(inputText, result.replaced));
+        setPendingAction("submit");
+        setIsWarningOpen(true);
+        setSubmitting(false);
+        return;
+      }
+
+      await submitAnswer(inputText);
+    } catch (error) {
+      console.error(`[AnswersSection] チェックエラー:`, error);
+      setError(`${label}の送信中にエラーが発生しました。`);
+      setSubmitting(false);
+    }
+  };
+
   // 本文を取得するヘルパー関数
   // バックエンドのレスポンス形式に応じてよしなに表示
   const getDisplayContent = (c: AnswerData) => {
@@ -255,10 +286,8 @@ export default function AnswersSection({
     return String(commentUserId) === String(currentUserId);
   };
 
-  // 編集送信の処理
-  const handleEditSubmit = async () => {
-    if (!editingAnswer || !editInputText.trim()) return;
-
+  // 編集送信の実処理
+  const submitEdit = async (textToSubmit: string) => {
     setEditSubmitting(true);
     setEditError(null);
 
@@ -271,7 +300,7 @@ export default function AnswersSection({
           const response = await fetchWithAuth(editEndpoint, {
             method: "PATCH",
             body: JSON.stringify({
-              comment: editInputText,
+              comment: textToSubmit,
               postId: postId,
               userId: currentUserId || "1"
             }),
@@ -288,7 +317,7 @@ export default function AnswersSection({
           const response = await fetchWithAuth(editEndpoint, {
             method: "PATCH",
             body: JSON.stringify({
-              comment: editInputText,
+              comment: textToSubmit,
               questionId: questionId ?? postId,
               userId: currentUserId || "1"
             }),
@@ -306,12 +335,12 @@ export default function AnswersSection({
         if (ans.id === editingAnswer.id) {
           // 元のデータ構造を維持しつつ、テキスト部分を更新
           const updated = { ...ans };
-          if (updated.content !== undefined) updated.content = editInputText;
-          if (updated.comment !== undefined) updated.comment = editInputText;
-          if (updated.answer !== undefined) updated.answer = editInputText;
+          if (updated.content !== undefined) updated.content = textToSubmit;
+          if (updated.comment !== undefined) updated.comment = textToSubmit;
+          if (updated.answer !== undefined) updated.answer = textToSubmit;
           // どれにも該当しない場合は新しくプロパティをセットしないが、念のため
           if (updated.content === undefined && updated.comment === undefined && updated.answer === undefined) {
-            updated.comment = editInputText;
+            updated.comment = textToSubmit;
           }
           return updated;
         }
@@ -325,6 +354,45 @@ export default function AnswersSection({
       setEditError(`${label}の編集に失敗しました。`);
     } finally {
       setEditSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingAnswer || !editInputText.trim()) return;
+
+    setEditSubmitting(true);
+    try {
+      const result = await checkBannedWords(editInputText);
+
+      if (result.hasChanges) {
+        setReplacedText(result.replaced);
+        setDetectedWords(extractDetectedWords(editInputText, result.replaced));
+        setPendingAction("edit");
+        setIsWarningOpen(true);
+        setEditSubmitting(false);
+        return;
+      }
+
+      await submitEdit(editInputText);
+    } catch (error) {
+      console.error(`[AnswersSection] チェックエラー:`, error);
+      setEditError(`${label}の編集チェック中にエラーが発生しました。`);
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      if (pendingAction === "submit") {
+        await submitAnswer(replacedText);
+      } else if (pendingAction === "edit") {
+        await submitEdit(replacedText);
+      }
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
+      setPendingAction(null);
     }
   };
 
@@ -610,6 +678,18 @@ export default function AnswersSection({
           </div>
         </div>
       )}
+
+      {/* 不適切ワード警告モーダル */}
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => {
+          setIsWarningOpen(false);
+          setPendingAction(null);
+        }}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+      />
     </div>
   );
 }

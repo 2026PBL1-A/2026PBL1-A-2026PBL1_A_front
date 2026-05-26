@@ -2,12 +2,10 @@
 
 import React from "react";
 
-// バックエンドから返却される警告の型定義の想定
-// 例: APIが 400 Bad Request と共に下記のようなJSONを返すことを想定
-export interface InappropriateWordWarningResponse {
-  error: string;
-  code: "INAPPROPRIATE_WORDS_DETECTED";
-  detectedWords: string[]; // 検出された不適切なワードのリスト
+// バックエンドの禁止ワード置換APIのレスポンス型
+// PATCH /banned-words/replace → { replacedContent: string }
+export interface BannedWordsReplaceResponse {
+  replacedContent: string;
 }
 
 interface InappropriateWordWarningModalProps {

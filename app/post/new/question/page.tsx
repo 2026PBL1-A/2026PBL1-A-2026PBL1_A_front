@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isUsingBackend } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "@/app/components/InappropriateWordWarningModal";
 import Image from "next/image";
 
 export default function CreateQuestionPage() {
@@ -25,6 +27,16 @@ export default function CreateQuestionPage() {
   const [tempHeaderImage, setTempHeaderImage] = useState<File | null>(null);
   const [tempTopImage, setTempTopImage] = useState<File | null>(null);
   const [tempBottomImage, setTempBottomImage] = useState<File | null>(null);
+
+  // --- 不適切ワード警告モーダル用のステート ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  
+  // 伏字置換済みのテキストを保持
+  const [replacedTitle, setReplacedTitle] = useState("");
+  const [replacedContent, setReplacedContent] = useState("");
+  
   const presetTags = [
     "React",
     "Next.js",
@@ -72,9 +84,8 @@ export default function CreateQuestionPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const submitPost = async (submitTitle: string, submitContent: string) => {
+    setIsLoading(true);
     const finalTags = selectedTags;
 
     if (!title || !content) {
@@ -115,8 +126,8 @@ export default function CreateQuestionPage() {
         );
 
         const payload = {
-          title,
-          content,
+          title: submitTitle,
+          content: submitContent,
           ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
         };
 
@@ -202,6 +213,55 @@ export default function CreateQuestionPage() {
       alert(message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !content) {
+      alert("タイトルと本文を入力してください");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const [titleResult, contentResult] = await Promise.all([
+        checkBannedWords(title),
+        checkBannedWords(content),
+      ]);
+
+      if (titleResult.hasChanges || contentResult.hasChanges) {
+        setReplacedTitle(titleResult.replaced);
+        setReplacedContent(contentResult.replaced);
+
+        const titleWords = titleResult.hasChanges
+          ? extractDetectedWords(title, titleResult.replaced)
+          : [];
+        const contentWords = contentResult.hasChanges
+          ? extractDetectedWords(content, contentResult.replaced)
+          : [];
+        setDetectedWords([...new Set([...titleWords, ...contentWords])]);
+
+        setIsWarningOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
+      await submitPost(title, content);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "チェックに失敗しました";
+      alert(message);
+      setIsLoading(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      await submitPost(replacedTitle, replacedContent);
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
     }
   };
 
@@ -673,6 +733,14 @@ export default function CreateQuestionPage() {
           </div>
         </form>
       </div>
+
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => setIsWarningOpen(false)}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+      />
     </div>
   );
 }
