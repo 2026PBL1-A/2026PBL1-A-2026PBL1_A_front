@@ -668,18 +668,18 @@ export default function PostEditButton({ post }: { post: any }) {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                disabled={isDeleting}
-              >
-                キャンセル
-              </button>
-              <button
                 onClick={handleDeleteSubmit}
                 disabled={isDeleting}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center disabled:opacity-50"
               >
                 {isDeleting ? "削除中..." : "削除する"}
+              </button>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                disabled={isDeleting}
+              >
+                キャンセル
               </button>
             </div>
           </div>

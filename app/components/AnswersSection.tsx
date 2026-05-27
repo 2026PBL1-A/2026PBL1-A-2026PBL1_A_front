@@ -711,6 +711,13 @@ export default function AnswersSection({
 
             <div className="flex justify-end gap-3">
               <button
+                onClick={performDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center disabled:opacity-50"
+              >
+                {isDeleting ? "削除中..." : "削除する"}
+              </button>
+              <button
                 onClick={() => {
                   setIsDeleteModalOpen(false);
                   setDeleteTargetId(null);
@@ -719,13 +726,6 @@ export default function AnswersSection({
                 disabled={isDeleting}
               >
                 キャンセル
-              </button>
-              <button
-                onClick={performDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center disabled:opacity-50"
-              >
-                {isDeleting ? "削除中..." : "削除する"}
               </button>
             </div>
           </div>
