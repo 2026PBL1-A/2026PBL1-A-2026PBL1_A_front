@@ -50,10 +50,50 @@ export default function PostEditButton({ post }: { post: any }) {
 
   const [editTitle, setEditTitle] = useState(post.title || "");
   
-  // 初期タグの取得（配列形式を想定）
-  const initialTags = Array.isArray(post.tags) 
-    ? post.tags.map((t: any) => typeof t === 'string' ? t : t.tag).filter(Boolean)
-    : post.tag ? [post.tag] : [];
+  // 初期タグの取得（backend のさまざまな形に対応）
+  const initialTags = (() => {
+    try {
+      // 1) 直接 tags 配列（文字列や { tag: 'name' }）
+      if (Array.isArray(post.tags) && post.tags.length > 0) {
+        return post.tags.map((t: any) => {
+          if (!t) return null;
+          if (typeof t === 'string') return t;
+          if (typeof t === 'object') return (t.tag ?? t.name ?? null);
+          return null;
+        }).filter(Boolean);
+      }
+
+      // 2) 単一 tag フィールド
+      if (post.tag) return [post.tag];
+
+      // 3) postTags リレーション (例: { postTags: [{ tag: { tag: 'hoge' } }, ...] })
+      if (Array.isArray(post.postTags) && post.postTags.length > 0) {
+        return post.postTags.map((pt: any) => {
+          if (!pt) return null;
+          // pt.tag がオブジェクトか文字列かに対応
+          if (typeof pt.tag === 'string') return pt.tag;
+          if (pt.tag && typeof pt.tag === 'object') return pt.tag.tag ?? pt.tag.name ?? null;
+          // 直接タグ名を持つ場合
+          return pt.tagName ?? pt.name ?? null;
+        }).filter(Boolean);
+      }
+
+      // 4) questionTags リレーション（質問の場合）
+      if (Array.isArray(post.questionTags) && post.questionTags.length > 0) {
+        return post.questionTags.map((qt: any) => {
+          if (!qt) return null;
+          if (typeof qt.tag === 'string') return qt.tag;
+          if (qt.tag && typeof qt.tag === 'object') return qt.tag.tag ?? qt.tag.name ?? null;
+          return qt.tagName ?? qt.name ?? null;
+        }).filter(Boolean);
+      }
+
+      return [];
+    } catch (e) {
+      console.error("タグ抽出エラー:", e);
+      return [];
+    }
+  })();
   
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
   const [availableTags, setAvailableTags] = useState<{ id: string; tag: string }[]>([]);
@@ -144,6 +184,19 @@ export default function PostEditButton({ post }: { post: any }) {
       setIsImageSectionOpen(false);
     }
   }, [isOpen, initialExistingImages]);
+
+  // モーダルを開いたときにタイトル・本文・タグを最新の投稿データで初期化
+  useEffect(() => {
+    if (isOpen) {
+      setEditTitle(post.title || "");
+      setEditContent(post.content || "");
+      // initialTags は上で計算済みの配列なのでそのまま設定
+      setSelectedTags(Array.isArray(initialTags) ? [...initialTags] : []);
+      setCustomTag("");
+    }
+    // isOpen の切り替え時だけ初期化する（initialTags の参照変化でループするのを防ぐ）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // 自分の投稿かどうか判定
   const isMyPost = () => {
