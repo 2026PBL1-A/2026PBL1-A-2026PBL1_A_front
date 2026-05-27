@@ -45,6 +45,12 @@ export default function AnswersSection({
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  // 削除確認モーダル用のステート
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   // ドロップダウンメニュー開閉用のステート
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
 
@@ -292,10 +298,16 @@ export default function AnswersSection({
     setEditError(null);
 
     try {
+      if (!editingAnswer) {
+        setEditError(`${label}の編集に失敗しました。`);
+        setEditSubmitting(false);
+        return;
+      }
+      const targetId = editingAnswer.id;
       if (isUsingBackend()) {
         if (itemType === "creation") {
           // コメントの編集APIとの疎通
-          const editEndpoint = `/comments/update/${editingAnswer.id}`;
+          const editEndpoint = `/comments/update/${targetId}`;
 
           const response = await fetchWithAuth(editEndpoint, {
             method: "PATCH",
@@ -312,7 +324,7 @@ export default function AnswersSection({
           }
         } else {
           // 回答の編集APIとの疎通
-          const editEndpoint = `/answers/update/${editingAnswer.id}`;
+          const editEndpoint = `/answers/update/${targetId}`;
 
           const response = await fetchWithAuth(editEndpoint, {
             method: "PATCH",
@@ -332,7 +344,7 @@ export default function AnswersSection({
 
       // API通信成功（またはAPI未使用/未実装）後、フロント側の状態を更新する
       setAnswers(prevAnswers => prevAnswers.map(ans => {
-        if (ans.id === editingAnswer.id) {
+        if (ans.id === targetId) {
           // 元のデータ構造を維持しつつ、テキスト部分を更新
           const updated = { ...ans };
           if (updated.content !== undefined) updated.content = textToSubmit;
@@ -397,29 +409,32 @@ export default function AnswersSection({
   };
 
   // 削除の処理
-  const handleDeleteAnswer = async (id: string | number) => {
-    if (!window.confirm("本当に削除しますか？")) return;
+  const handleDeleteAnswer = (id: string | number) => {
+    setDeleteTargetId(id);
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  const performDelete = async () => {
+    const id = deleteTargetId;
+    if (id === null) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
 
     try {
       if (isUsingBackend()) {
         if (itemType === "creation") {
-          // コメントの削除API
           const deleteEndpoint = `/comments/delete/${id}`;
-          const response = await fetchWithAuth(deleteEndpoint, {
-            method: "DELETE",
-          });
-
+          const response = await fetchWithAuth(deleteEndpoint, { method: "DELETE" });
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || "削除に失敗しました");
           }
         } else {
-          // 回答の削除API
           const deleteEndpoint = `/answers/delete/${id}`;
-          const response = await fetchWithAuth(deleteEndpoint, {
-            method: "DELETE",
-          });
-
+          const response = await fetchWithAuth(deleteEndpoint, { method: "DELETE" });
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || "削除に失敗しました");
@@ -427,13 +442,15 @@ export default function AnswersSection({
         }
       }
 
-      // 成功したら画面上から消す
       setAnswers(prevAnswers => prevAnswers.filter(ans => ans.id !== id));
-      setOpenMenuId(null);
+      setIsDeleteModalOpen(false);
+      setDeleteTargetId(null);
       alert("削除が完了しました");
     } catch (err) {
       console.error(`[AnswersSection] 削除エラー:`, err);
-      alert(`${label}の削除に失敗しました。`);
+      setDeleteError(`${label}の削除に失敗しました。`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -673,6 +690,42 @@ export default function AnswersSection({
                     保存中...
                   </>
                 ) : "保存する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除確認モーダル */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{label}を削除しますか？</h3>
+            <p className="text-sm text-gray-600 mb-6">この操作は取り消せません。<br/>本当にこの{label}を削除してもよろしいですか？</p>
+
+            {deleteError && (
+              <div className="mb-4 text-red-500 text-sm font-medium p-3 bg-red-50 rounded-lg">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setDeleteTargetId(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                disabled={isDeleting}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={performDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition flex items-center disabled:opacity-50"
+              >
+                {isDeleting ? "削除中..." : "削除する"}
               </button>
             </div>
           </div>
