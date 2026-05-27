@@ -657,7 +657,7 @@ export default function PostEditButton({ post }: { post: any }) {
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-4">投稿を削除しますか？</h3>
             <p className="text-sm text-gray-600 mb-6">
-              この操作は取り消せません。本当にこの投稿を削除してもよろしいですか？
+              この操作は取り消せません。<br/>本当にこの投稿を削除してもよろしいですか？
             </p>
 
             {deleteError && (
