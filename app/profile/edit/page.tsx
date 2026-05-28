@@ -267,7 +267,6 @@ export default function ProfileEditPage() {
       }
       localStorage.setItem("user_bio", bio ?? "");
 
-      alert("プロフィールを更新しました");
       router.push("/profile");
     } catch (error) {
       console.error("保存エラー:", error);
@@ -307,7 +306,6 @@ export default function ProfileEditPage() {
       }
 
       // 成功した場合
-      alert("パスワードを変更しました");
       setIsPasswordModalOpen(false);
       setCurrentPassword("");
       setNewPassword("");

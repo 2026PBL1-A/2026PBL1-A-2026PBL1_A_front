@@ -237,10 +237,7 @@ export default function CreateCreationPage() {
 
           throw new Error("画像のアップロードに失敗したため、投稿を中止しました");
         }
-
-        alert("投稿しました");
       } else {
-        alert("投稿しました（ローカル）");
       }
       router.push("/list");
     } catch (error) {
