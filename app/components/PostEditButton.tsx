@@ -127,6 +127,8 @@ export default function PostEditButton({ post }: { post: any }) {
     "C", "C++", "HTML", "CSS", "Node.js", "Webアプリ",
   ];
 
+  const [showAllTags, setShowAllTags] = useState(false);
+
   const skillCandidates = isUsingBackend()
     ? availableTags.map((tag) => tag.tag)
     : presetTags;
@@ -577,7 +579,7 @@ export default function PostEditButton({ post }: { post: any }) {
               <label className="block text-sm font-medium text-gray-700 mb-2">タグ</label>
               
               <div className="flex flex-wrap gap-2 mb-3">
-                {skillCandidates.map((tag) => (
+                {(showAllTags ? skillCandidates : skillCandidates.slice(0, 10)).map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -591,6 +593,25 @@ export default function PostEditButton({ post }: { post: any }) {
                     #{tag}
                   </button>
                 ))}
+
+                {!showAllTags && skillCandidates.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags(true)}
+                    className="px-3 py-1.5 rounded-full text-sm text-blue-500 hover:bg-blue-50 transition"
+                  >
+                    さらに表示...
+                  </button>
+                )}
+                {showAllTags && skillCandidates.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags(false)}
+                    className="px-3 py-1.5 rounded-full text-sm text-gray-500 hover:bg-gray-100 transition"
+                  >
+                    一部のみ表示
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-2">
