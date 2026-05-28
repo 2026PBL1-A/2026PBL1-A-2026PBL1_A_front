@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { isUsingBackend, fetchWithAuth } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
 import { useRouter } from "next/navigation";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "./InappropriateWordWarningModal";
 
 // 画像スロットの定義
 interface ImageSlot {
@@ -102,6 +104,13 @@ export default function PostEditButton({ post }: { post: any }) {
   const [editContent, setEditContent] = useState(post.content || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- 不適切ワード警告モーダル用のステート ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [replacedTitle, setReplacedTitle] = useState("");
+  const [replacedContent, setReplacedContent] = useState("");
 
   // --- 画像編集用ステート ---
   // 既存画像の情報 (order をキーとした Map)
@@ -277,9 +286,7 @@ export default function PostEditButton({ post }: { post: any }) {
     return existingImages.has(order) || newFiles.has(order);
   };
 
-  const handleEditSubmit = async () => {
-    if (!editTitle.trim() || !editContent.trim()) return;
-
+  const submitEdit = async (titleToSubmit: string, contentToSubmit: string) => {
     setIsSubmitting(true);
     setError(null);
 
@@ -314,8 +321,8 @@ export default function PostEditButton({ post }: { post: any }) {
         );
 
         const payload = {
-          title: editTitle,
-          content: editContent,
+          title: titleToSubmit,
+          content: contentToSubmit,
           ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
         };
 
@@ -420,6 +427,53 @@ export default function PostEditButton({ post }: { post: any }) {
       setError(err.message || "編集に失敗しました。");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTitle.trim() || !editContent.trim()) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const [titleResult, contentResult] = await Promise.all([
+        checkBannedWords(editTitle),
+        checkBannedWords(editContent),
+      ]);
+
+      if (titleResult.hasChanges || contentResult.hasChanges) {
+        setReplacedTitle(titleResult.replaced);
+        setReplacedContent(contentResult.replaced);
+
+        const titleWords = titleResult.hasChanges
+          ? extractDetectedWords(editTitle, titleResult.replaced)
+          : [];
+        const contentWords = contentResult.hasChanges
+          ? extractDetectedWords(editContent, contentResult.replaced)
+          : [];
+        setDetectedWords([...new Set([...titleWords, ...contentWords])]);
+
+        setIsWarningOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      await submitEdit(editTitle, editContent);
+    } catch (error) {
+      console.error("[PostEditButton] チェックエラー:", error);
+      setError("編集チェック中にエラーが発生しました。");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      await submitEdit(replacedTitle, replacedContent);
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
     }
   };
 
@@ -736,6 +790,15 @@ export default function PostEditButton({ post }: { post: any }) {
           </div>
         </div>
       )}
+
+      {/* 不適切ワード警告モーダル */}
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => setIsWarningOpen(false)}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+      />
     </>
   );
 }
