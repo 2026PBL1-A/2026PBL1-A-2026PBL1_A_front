@@ -110,7 +110,7 @@ export default function Page() {
 
   // ページネーション用ステート
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   // 検索条件やフィルターが変わったらページを1に戻す
   useEffect(() => {
