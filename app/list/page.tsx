@@ -384,7 +384,7 @@ export default function Page() {
   return (
     <div className="flex min-h-screen bg-white">
       {/* サイドバー (PCでのみ表示) */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 overflow-y-auto pb-24">
+      <aside className="hidden md:flex flex-col w-52 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 overflow-y-auto pb-24">
         <h3 className="text-sm font-bold text-gray-500 mb-4 px-2 uppercase tracking-wider">フォロー中</h3>
         <div className="space-y-1">
           {followingList.map((user) => (
@@ -405,7 +405,7 @@ export default function Page() {
       </aside>
 
       {/* メインコンテンツ */}
-      <div className="flex-1 md:ml-64 w-full">
+      <div className="flex-1 md:ml-52 w-full">
         {/* ヘッダー */}
         <div className="fixed top-4 left-4 md:left-[272px] z-10 transition-all">
           <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 rounded shadow-sm backdrop-blur-sm border border-gray-100">
@@ -546,7 +546,7 @@ export default function Page() {
 
         {isLoading && <p className="text-gray-500 text-center py-10">読み込み中...</p>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedPosts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
