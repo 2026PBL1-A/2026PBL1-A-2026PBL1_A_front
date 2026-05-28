@@ -6,7 +6,7 @@ import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
 import Image from "next/image";
 import { formatDate } from "@/lib/formatDate";
-import { isUsingBackend, apiCall, fetchWithAuth } from "@/lib/api";
+import { isUsingBackend } from "@/lib/api";
 import {
   createProfile,
   getAllProfiles,
@@ -135,50 +135,69 @@ function ProfileContent() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
 
-  const [followModalOpen, setFollowModalOpen] = useState(false);
-  const [followModalType, setFollowModalType] = useState<"following" | "followers">("following");
-
-  const [followingList, setFollowingList] = useState<{ id: string; username: string; iconUrl?: string | null }[]>([]);
-  const [followersList, setFollowersList] = useState<{ id: string; username: string; iconUrl?: string | null }[]>([]);
-
-  const openFollowModal = (type: "following" | "followers") => {
-    setFollowModalType(type);
-    setFollowModalOpen(true);
-  };
-
   const [skills, setSkills] = useState<string[]>([]);
 
   const handleFollowToggle = async () => {
-    if (followLoading) return;
+  if (followLoading) return;
 
-    setFollowLoading(true);
+  setFollowLoading(true);
 
-    try {
-      // backend 使用時
-      if (isUsingBackend()) {
-        if (!userIdParam) {
-          throw new Error("フォロー対象のユーザーIDが不明です");
+  try {
+    const targetUserId = userIdParam;
+
+    if (!targetUserId) return;
+
+    // backend 使用時
+    if (isUsingBackend()) {
+      const token = localStorage.getItem("access_token");
+
+      const method = isFollowing ? "DELETE" : "POST";
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/${targetUserId}`,
+        {
+          method,
+          headers: {
+            ...(token
+              ? { Authorization: `Bearer ${token}` }
+              : {}),
+          },
         }
-        // apiCall を使うことで Authorization ヘッダーが自動付与され、401 ならログインへリダイレクトされる
-        await apiCall(`/follows/${userIdParam}`, {
-          method: "PATCH",
-        });
-      }
-
-      // UI更新
-      setIsFollowing((prev) => !prev);
-
-      setFollowersCount((prev) =>
-        isFollowing ? prev - 1 : prev + 1
       );
 
-    } catch (err) {
-      console.error(err);
-      alert("フォロー処理に失敗しました");
-    } finally {
-      setFollowLoading(false);
+      if (!response.ok) {
+        throw new Error("フォロー更新に失敗しました");
+      }
     }
-  };
+
+    // UI更新
+    const newFollowState = !isFollowing;
+
+    setIsFollowing(newFollowState);
+
+    setFollowersCount((prev) =>
+      newFollowState ? prev + 1 : prev - 1
+    );
+
+    // localStorage保存
+    if (newFollowState) {
+      localStorage.setItem(
+        `follow_${targetUserId}`,
+        "true"
+      );
+    } else {
+      localStorage.removeItem(
+        `follow_${targetUserId}`
+      );
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("フォロー処理に失敗しました");
+  } finally {
+    setFollowLoading(false);
+  }
+};
 
   useEffect(() => {
     const storedSkills = localStorage.getItem("user_skills");
@@ -241,6 +260,19 @@ function ProfileContent() {
         const token = localStorage.getItem("access_token");
         const targetUserId = userIdParam || storedUserId;
 
+        // フォロー状態を localStorage から復元
+        if (targetUserId) {
+          const cached = localStorage.getItem(
+            `follow_${targetUserId}`
+          );
+
+          if (cached === "true") {
+            setIsFollowing(true);
+          } else {
+            setIsFollowing(false);
+          }
+        }
+
         let profileResp: Awaited<ReturnType<typeof getProfile>> | null = null;
 
         // 自分のプロフィールかつ保存済みの profile_id があれば優先して取得
@@ -276,6 +308,15 @@ function ProfileContent() {
           setUserName("ユーザーが見つかりません");
           setBio("");
           return;
+        }
+
+        // localStorage のフォロー状態を反映
+        if (targetUserId) {
+          const cachedFollow = localStorage.getItem(
+            `follow_${targetUserId}`
+          );
+
+          setIsFollowing(cachedFollow === "true");
         }
 
         // 状態の更新
@@ -357,37 +398,6 @@ function ProfileContent() {
 
         setUserPosts(mappedPosts);
 
-        // フォロワー情報とフォロー情報を取得する
-        if (targetUserId) {
-          try {
-            const [followersRes, followingRes] = await Promise.all([
-              fetchWithAuth(`/follows/followers/${targetUserId}`),
-              fetchWithAuth(`/follows/following/${targetUserId}`)
-            ]);
-            
-            if (followersRes.ok) {
-              const fList = await followersRes.json();
-              setFollowersList(fList);
-              setFollowersCount(fList.length);
-              
-              if (!currentIsMyProfile) {
-                const myUserId = localStorage.getItem("user_id");
-                if (myUserId) {
-                  const amFollowing = fList.some((f: any) => f.id === myUserId);
-                  setIsFollowing(amFollowing);
-                }
-              }
-            }
-            
-            if (followingRes.ok) {
-              const followingData = await followingRes.json();
-              setFollowingList(followingData);
-            }
-          } catch {
-            // フォロー情報取得に失敗してもプロフィール表示は続行
-          }
-        }
-
         // 投稿と質問の両方から有効な日時だけで最新を計算する
         const allPosts = [...profilePosts, ...profileQuestions];
         if (allPosts.length > 0) {
@@ -411,7 +421,38 @@ function ProfileContent() {
     };
 
     fetchProfileAndPosts();
-  }, [userIdParam]);
+
+    // フォロー状態取得
+    const fetchFollowStatus = async () => {
+  if (!currentIsMyProfile && targetUserId) {
+    try {
+      const token = localStorage.getItem("access_token");
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/status/${targetUserId}`,
+        {
+          headers: {
+            ...(token
+              ? { Authorization: `Bearer ${token}` }
+              : {}),
+          },
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+
+        setIsFollowing(data.isFollowing);
+        setFollowersCount(data.followersCount ?? 0);
+      }
+    } catch (err) {
+      console.error("フォロー状態取得失敗", err);
+    }
+  }
+};
+
+fetchFollowStatus();
+  }, []);
 
   const creationPosts = userPosts.filter(post => post.itemType === 'creation');
   const questionPosts = userPosts.filter(post => post.itemType === 'question');
@@ -440,85 +481,113 @@ function ProfileContent() {
 
           <div className="px-6 pb-4">
             {/* アイコンと編集ボタン */}
-            <div className="relative flex justify-between items-start mb-4">
-              <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 z-10 shadow-sm bg-white">
-                {selectedIcon ? (
-                  <img
-                    src={selectedIcon}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gray-600 font-bold text-5xl leading-none">
-                    {userName.charAt(0)}
-                  </span>
-                )}
-              </div>
+            {/* アイコン・ユーザー情報・ボタン */}
+            <div className="relative mb-6">
+              {/* 上段 */}
+              <div className="flex justify-between items-start">
+                
+                {/* 左側：アイコン */}
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 z-10 shadow-sm">
+                  {selectedIcon ? (
+                    <img
+                      src={selectedIcon}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-gray-600 font-bold text-5xl leading-none">
+                      {userName.charAt(0)}
+                    </span>
+                  )}
+                </div>
 
-              <div className="mt-4 flex gap-3">
-              {isMyProfile ? (
-                <Link href="/profile/edit">
-                  <button className="bg-white text-gray-800 border border-gray-300 font-bold px-5 py-2 rounded-full hover:bg-gray-100 transition text-sm">
-                    プロフィールを編集
-                  </button>
-                </Link>
-              ) : (
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading}
-                  className={`font-bold px-5 py-2 rounded-full transition text-sm shadow-sm ${
-                    isFollowing
-                      ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                      : "bg-blue-500 text-white hover:bg-blue-600"
-                  }`}
-                >
-                  {followLoading
-                    ? "処理中..."
-                    : isFollowing
-                    ? "フォロー中"
-                    : "フォローする"}
-                </button>
-              )}
-            </div>
-            </div>
-
-            {/* 基本情報（表示名・IDなど） */}
-            <div className="mb-4">
-              <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">{userName}</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-gray-500 text-sm">{userEmail || `user_${userName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "id"}`}</p>
-                <div className="flex items-center text-gray-400 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>更新: {lastUpdated}</span>
+                {/* 右側：ボタン */}
+                <div className="mt-4">
+                  {isMyProfile ? (
+                    <Link href="/profile/edit">
+                      <button className="min-w-[140px] h-11 bg-white text-gray-800 border border-gray-300 font-bold px-5 rounded-full hover:bg-gray-100 transition text-sm shadow-sm">
+                        プロフィールを編集
+                      </button>
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className={`min-w-[140px] h-11 font-bold px-5 rounded-full transition text-sm shadow-sm ${
+                        isFollowing
+                          ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                          : "bg-blue-500 text-white hover:bg-blue-600"
+                      }`}
+                    >
+                      {followLoading
+                        ? "処理中..."
+                        : isFollowing
+                        ? "フォロー中"
+                        : "フォローする"}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* フォロー・フォロワー・投稿数 */}
-              <div className="flex items-center gap-6 mt-3 mb-4">
-                <button onClick={() => openFollowModal('following')} className="flex items-center gap-1 hover:underline focus:outline-none group">
-                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{followingList.length}</span>
-                  <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロー中</span>
-                </button>
-                <button onClick={() => openFollowModal('followers')} className="flex items-center gap-1 hover:underline focus:outline-none group">
-                  <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{followersCount}</span>
-                  <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">フォロワー</span>
-                </button>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-gray-900">
-                    {creationPosts.length + questionPosts.length}
-                  </span>
-                  <span className="text-sm text-gray-500">投稿数</span>
+              {/* 下段：プロフィール情報 */}
+              <div className="mt-4">
+                <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">
+                  {userName}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <p className="text-gray-500 text-sm">
+                    {userEmail ||
+                      `user_${userName
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]/g, "")
+                        .slice(0, 8) || "id"}`}
+                  </p>
+
+                  <div className="flex items-center text-gray-400 text-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+
+                    <span>更新: {lastUpdated}</span>
+                  </div>
+                </div>
+
+                {/* 自己紹介 */}
+                <div className="mt-4">
+                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px]">
+                    {bio}
+                  </p>
+                </div>
+
+                {/* フォロー情報 */}
+                <div className="flex items-center gap-6 text-sm text-gray-600 mt-4">
+                  <div>
+                    <span className="font-bold text-gray-900">
+                      {followersCount}
+                    </span>{" "}
+                    フォロワー
+                  </div>
+
+                  <div>
+                    <span className="font-bold text-gray-900">
+                      {creationPosts.length + questionPosts.length}
+                    </span>{" "}
+                    投稿
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* 自己紹介文 */}
-            <div className="mb-4">
-              <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px]">
-                {bio}
-              </p>
             </div>
 
           {/* タブナビゲーション */}
@@ -614,41 +683,6 @@ function ProfileContent() {
           </div>
         </div>
       </div>
-
-      {/* フォロー/フォロワー モーダル */}
-      {followModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">
-                {followModalType === "following" ? "フォロー中" : "フォロワー"}
-              </h2>
-              <button onClick={() => setFollowModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1.5 transition">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="overflow-y-auto p-2">
-              {(followModalType === "following" ? followingList : followersList).map((user) => (
-                <Link key={user.id} href={`/profile?userId=${user.id}`} onClick={() => setFollowModalOpen(false)} className="flex items-center gap-3 px-3 py-3 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer group">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors flex items-center justify-center">
-                    {user.iconUrl ? (
-                      <img src={`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${user.iconUrl}`} alt={user.username} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-gray-500 font-bold">{user.username?.charAt(0)}</span>
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-gray-800 group-hover:text-blue-600 truncate flex-1 transition-colors">
-                    {user.username}
-                  </span>
-                  <button className="px-4 py-1.5 text-xs font-bold rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition shadow-sm shrink-0">
-                    プロフィール
-                  </button>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
     </div>
   );
