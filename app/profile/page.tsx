@@ -386,6 +386,7 @@ function ProfileContent() {
             content: post.content,
             itemType: "creation" as const,
             created_at: post.created_at,
+            score: post.score,
           })),
           ...profileQuestions.map((q) => ({
             id: q.id,

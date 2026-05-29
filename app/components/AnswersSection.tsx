@@ -236,8 +236,13 @@ export default function AnswersSection({
 
         // 投稿直後はバックエンドからの返り値にユーザー名が含まれないことがあるため、
         // ログイン中のユーザー名を補完する
-        if (!savedAnswer.username && !savedAnswer.userId?.username && !savedAnswer.userid?.username && typeof window !== "undefined") {
-          savedAnswer.username = localStorage.getItem("user_name") || "あなた";
+        if (typeof window !== "undefined") {
+          if (!savedAnswer.username && !savedAnswer.userId?.username && !savedAnswer.userid?.username) {
+            savedAnswer.username = localStorage.getItem("user_name") || "あなた";
+          }
+          if (!savedAnswer.avatarUrl) {
+            savedAnswer.avatarUrl = localStorage.getItem("avatar_url") || localStorage.getItem("user_icon") || "";
+          }
         }
 
         setAnswers([...answers, savedAnswer]);

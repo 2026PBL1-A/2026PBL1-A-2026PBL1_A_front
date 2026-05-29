@@ -63,6 +63,7 @@ export interface ProfilePostData {
   content: string;
   created_at: string;
   updated_at: string;
+  score?: number;
 }
 
 // プロフィール関連 API をまとめた専用モジュール

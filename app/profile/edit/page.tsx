@@ -409,10 +409,17 @@ export default function ProfileEditPage() {
             <button
               key={icon}
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setAvatarUrl(icon);
-                setAvatarFile(null);
                 setOpen(false);
+                try {
+                  const response = await fetch(icon);
+                  const blob = await response.blob();
+                  const file = new File([blob], icon.split('/').pop() || 'icon.png', { type: blob.type });
+                  setAvatarFile(file);
+                } catch (e) {
+                  console.error("デフォルトアイコンのファイル化に失敗しました:", e);
+                }
               }}
               className={`p-1 rounded-full border-4 transition hover:scale-105 ${
                 avatarUrl === icon
