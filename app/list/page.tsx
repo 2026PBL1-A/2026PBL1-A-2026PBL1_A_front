@@ -72,11 +72,11 @@ function PostCard({ post }: { post: any }) {
         <p className="line-clamp-3 text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
           {post.content}
         </p>
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-2 mt-3 max-h-16 overflow-y-auto pr-1">
           {post.tags?.map((tag: string) => (
             <span
               key={tag}
-              className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+              className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full shrink-0"
             >
               #{tag}
             </span>
