@@ -424,6 +424,7 @@ function ProfileContent() {
 
     // フォロー状態取得
     const fetchFollowStatus = async () => {
+  const targetUserId = userIdParam || storedUserId;
   if (!currentIsMyProfile && targetUserId) {
     try {
       const token = localStorage.getItem("access_token");

@@ -54,6 +54,8 @@ export default function CreateCreationPage() {
     "Webアプリ",
   ];
 
+  const [showAllTags, setShowAllTags] = useState(false);
+
   const skillCandidates = isUsingBackend()
     ? availableTags.map((tag) => tag.tag)
     : presetTags;
@@ -237,10 +239,7 @@ export default function CreateCreationPage() {
 
           throw new Error("画像のアップロードに失敗したため、投稿を中止しました");
         }
-
-        alert("投稿しました");
       } else {
-        alert("投稿しました（ローカル）");
       }
       router.push("/list");
     } catch (error) {
@@ -333,7 +332,7 @@ export default function CreateCreationPage() {
 
             {/* タグ候補 */}
             <div className="flex flex-wrap gap-2">
-              {skillCandidates.map((tag) => (
+              {(showAllTags ? skillCandidates : skillCandidates.slice(0, 10)).map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -346,6 +345,25 @@ export default function CreateCreationPage() {
                   #{tag}
                 </button>
               ))}
+
+              {!showAllTags && skillCandidates.length > 10 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllTags(true)}
+                  className="px-3 py-1 rounded-full text-sm text-blue-500 hover:bg-blue-50 transition"
+                >
+                  さらに表示...
+                </button>
+              )}
+              {showAllTags && skillCandidates.length > 10 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllTags(false)}
+                  className="px-3 py-1 rounded-full text-sm text-gray-500 hover:bg-gray-100 transition"
+                >
+                  一部のみ表示
+                </button>
+              )}
             </div>
 
             {/* 自由入力 */}

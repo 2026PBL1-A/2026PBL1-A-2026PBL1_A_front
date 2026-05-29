@@ -149,7 +149,6 @@ export default function CreatePostPage() {
         }
 
         console.info("[Post] バックエンドに投稿を送信しました");
-        alert("投稿しました");
       } else {
         // ローカルモード（ダミー処理）
         console.info("[Post] ローカルダミーで投稿を処理しました", {
@@ -157,7 +156,6 @@ export default function CreatePostPage() {
           category,
           content: submitContent,
         });
-        alert("投稿しました（ローカル）");
       }
 
       // 投稿後に一覧へ遷移

@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { isUsingBackend, fetchWithAuth } from "@/lib/api";
 import { getAllTags, createTag } from "@/lib/profileApi";
 import { useRouter } from "next/navigation";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "./InappropriateWordWarningModal";
 
 // 画像スロットの定義
 interface ImageSlot {
@@ -103,6 +105,13 @@ export default function PostEditButton({ post }: { post: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // --- 不適切ワード警告モーダル用のステート ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [replacedTitle, setReplacedTitle] = useState("");
+  const [replacedContent, setReplacedContent] = useState("");
+
   // --- 画像編集用ステート ---
   // 既存画像の情報 (order をキーとした Map)
   const [existingImages, setExistingImages] = useState<Map<number, ExistingImage>>(new Map());
@@ -117,6 +126,8 @@ export default function PostEditButton({ post }: { post: any }) {
     "React", "Next.js", "TypeScript", "JavaScript", "Java", "Python",
     "C", "C++", "HTML", "CSS", "Node.js", "Webアプリ",
   ];
+
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const skillCandidates = isUsingBackend()
     ? availableTags.map((tag) => tag.tag)
@@ -277,9 +288,7 @@ export default function PostEditButton({ post }: { post: any }) {
     return existingImages.has(order) || newFiles.has(order);
   };
 
-  const handleEditSubmit = async () => {
-    if (!editTitle.trim() || !editContent.trim()) return;
-
+  const submitEdit = async (titleToSubmit: string, contentToSubmit: string) => {
     setIsSubmitting(true);
     setError(null);
 
@@ -314,8 +323,8 @@ export default function PostEditButton({ post }: { post: any }) {
         );
 
         const payload = {
-          title: editTitle,
-          content: editContent,
+          title: titleToSubmit,
+          content: contentToSubmit,
           ...(resolvedTagIds.length > 0 ? { tag_ids: resolvedTagIds } : {}),
         };
 
@@ -413,7 +422,6 @@ export default function PostEditButton({ post }: { post: any }) {
 
       // 成功したらモーダルを閉じてページをリロード（または遷移）して最新情報を取得
       setIsOpen(false);
-      alert("編集が完了しました");
       router.refresh();
       
     } catch (err: any) {
@@ -421,6 +429,53 @@ export default function PostEditButton({ post }: { post: any }) {
       setError(err.message || "編集に失敗しました。");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTitle.trim() || !editContent.trim()) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const [titleResult, contentResult] = await Promise.all([
+        checkBannedWords(editTitle),
+        checkBannedWords(editContent),
+      ]);
+
+      if (titleResult.hasChanges || contentResult.hasChanges) {
+        setReplacedTitle(titleResult.replaced);
+        setReplacedContent(contentResult.replaced);
+
+        const titleWords = titleResult.hasChanges
+          ? extractDetectedWords(editTitle, titleResult.replaced)
+          : [];
+        const contentWords = contentResult.hasChanges
+          ? extractDetectedWords(editContent, contentResult.replaced)
+          : [];
+        setDetectedWords([...new Set([...titleWords, ...contentWords])]);
+
+        setIsWarningOpen(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      await submitEdit(editTitle, editContent);
+    } catch (error) {
+      console.error("[PostEditButton] チェックエラー:", error);
+      setError("編集チェック中にエラーが発生しました。");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      await submitEdit(replacedTitle, replacedContent);
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
     }
   };
 
@@ -441,7 +496,6 @@ export default function PostEditButton({ post }: { post: any }) {
       }
 
       setIsDeleteModalOpen(false);
-      alert("削除が完了しました");
       router.push("/list");
       router.refresh();
       
@@ -525,7 +579,7 @@ export default function PostEditButton({ post }: { post: any }) {
               <label className="block text-sm font-medium text-gray-700 mb-2">タグ</label>
               
               <div className="flex flex-wrap gap-2 mb-3">
-                {skillCandidates.map((tag) => (
+                {(showAllTags ? skillCandidates : skillCandidates.slice(0, 10)).map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -539,6 +593,25 @@ export default function PostEditButton({ post }: { post: any }) {
                     #{tag}
                   </button>
                 ))}
+
+                {!showAllTags && skillCandidates.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags(true)}
+                    className="px-3 py-1.5 rounded-full text-sm text-blue-500 hover:bg-blue-50 transition"
+                  >
+                    さらに表示...
+                  </button>
+                )}
+                {showAllTags && skillCandidates.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags(false)}
+                    className="px-3 py-1.5 rounded-full text-sm text-gray-500 hover:bg-gray-100 transition"
+                  >
+                    一部のみ表示
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-2">
@@ -738,6 +811,15 @@ export default function PostEditButton({ post }: { post: any }) {
           </div>
         </div>
       )}
+
+      {/* 不適切ワード警告モーダル */}
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => setIsWarningOpen(false)}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+      />
     </>
   );
 }
