@@ -328,8 +328,7 @@ export default function ProfileEditPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Menu />
-      
-      <div className="max-w-2xl mx-auto pt-24 px-4">
+      <div className="w-[95%] md:w-[80%] lg:w-[65%] xl:w-[50%] 2xl:w-[40%] max-w-[1000px] mx-auto pt-24 px-4">
         {/* 戻るボタン */}
         <div className="mb-6">
           <Link href="/profile" className="text-gray-500 hover:text-gray-700 flex items-center transition w-fit">
@@ -341,20 +340,20 @@ export default function ProfileEditPage() {
         </div>
 
         {/* 編集フォームカード */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-8">
-          <h1 className="text-2xl font-bold mb-8 text-gray-800 border-b pb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-8 md:p-10 xl:p-12 transition-all">
+          <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold mb-8 md:mb-10 text-gray-800 border-b pb-4 transition-all">
             プロフィール編集
           </h1>
 
-          <form onSubmit={handleSave} className="space-y-6">
+          <form onSubmit={handleSave} className="space-y-6 md:space-y-8">
             
             {/* アイコン画像 */}
-            <div className="flex flex-col items-center mb-8">
-              <div className="w-24 h-24 rounded-full border-4 border-gray-100 bg-gray-200 overflow-hidden shadow-sm flex items-center justify-center shrink-0 mb-4 relative group">
+            <div className="flex flex-col items-center mb-8 md:mb-10">
+              <div className="w-24 h-24 md:w-32 md:h-32 xl:w-40 xl:h-40 rounded-full border-4 border-gray-100 bg-gray-200 overflow-hidden shadow-sm flex items-center justify-center shrink-0 mb-4 relative group transition-all">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Profile Preview" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-400 font-bold text-3xl">?</span>
+                  <span className="text-gray-400 font-bold text-3xl md:text-4xl xl:text-5xl">?</span>
                 )}
                 
                 {/* オーバーレイ */}

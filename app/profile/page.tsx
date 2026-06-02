@@ -464,8 +464,7 @@ fetchFollowStatus();
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Menu />
-
-      <div className="max-w-2xl mx-auto pt-16 px-4">
+      <div className="w-[95%] md:w-[80%] lg:w-[65%] xl:w-[50%] 2xl:w-[40%] max-w-[1000px] mx-auto pt-16 px-4">
         {/* 戻るボタン（Xの矢印ボタン風） */}
         <div className="mb-4">
           <Link href="/list" className="text-gray-900 bg-white/80 backdrop-blur hover:bg-gray-200 inline-flex items-center justify-center w-10 h-10 rounded-full transition shadow-sm border border-gray-200">
@@ -489,7 +488,7 @@ fetchFollowStatus();
               <div className="flex justify-between items-start">
                 
                 {/* 左側：アイコン */}
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 z-10 shadow-sm">
+                <div className="w-32 h-32 md:w-40 md:h-40 xl:w-48 xl:h-48 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center shrink-0 -mt-16 md:-mt-20 xl:-mt-24 z-10 shadow-sm transition-all">
                   {selectedIcon ? (
                     <img
                       src={selectedIcon}
@@ -497,7 +496,7 @@ fetchFollowStatus();
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-gray-600 font-bold text-5xl leading-none">
+                    <span className="text-gray-600 font-bold text-5xl md:text-6xl xl:text-7xl leading-none">
                       {userName.charAt(0)}
                     </span>
                   )}
@@ -532,13 +531,13 @@ fetchFollowStatus();
               </div>
 
               {/* 下段：プロフィール情報 */}
-              <div className="mt-4">
-                <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">
+              <div className="mt-4 md:mt-6 xl:mt-8">
+                <h1 className="text-2xl md:text-3xl xl:text-4xl font-extrabold text-gray-900 leading-tight transition-all">
                   {userName}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <p className="text-gray-500 text-sm">
+                <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-3">
+                  <p className="text-gray-500 text-sm md:text-base">
                     {userEmail ||
                       `user_${userName
                         .toLowerCase()
@@ -546,10 +545,10 @@ fetchFollowStatus();
                         .slice(0, 8) || "id"}`}
                   </p>
 
-                  <div className="flex items-center text-gray-400 text-sm">
+                  <div className="flex items-center text-gray-400 text-sm md:text-base">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-1"
+                      className="h-4 w-4 md:h-5 md:w-5 mr-1"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -567,8 +566,8 @@ fetchFollowStatus();
                 </div>
 
                 {/* 自己紹介 */}
-                <div className="mt-4">
-                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px]">
+                <div className="mt-4 md:mt-6 xl:mt-8">
+                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-[15px] md:text-base xl:text-lg transition-all">
                     {bio}
                   </p>
                 </div>
@@ -596,7 +595,7 @@ fetchFollowStatus();
           <div className="flex border-b border-gray-200 px-2">
             <button
               onClick={() => setActiveTab("skills")}
-              className={`flex-1 text-center py-4 text-[15px] font-bold hover:bg-gray-100 transition relative ${activeTab === "skills" ? "text-gray-900" : "text-gray-500"}`}
+              className={`flex-1 text-center py-4 text-[15px] md:text-base xl:text-lg font-bold hover:bg-gray-100 transition relative ${activeTab === "skills" ? "text-gray-900" : "text-gray-500"}`}
             >
               習得技術
               {activeTab === "skills" && (
@@ -605,7 +604,7 @@ fetchFollowStatus();
             </button>
             <button
               onClick={() => setActiveTab("creations")}
-              className={`flex-1 text-center py-4 text-[15px] font-bold hover:bg-gray-100 transition relative ${activeTab === "creations" ? "text-gray-900" : "text-gray-500"}`}
+              className={`flex-1 text-center py-4 text-[15px] md:text-base xl:text-lg font-bold hover:bg-gray-100 transition relative ${activeTab === "creations" ? "text-gray-900" : "text-gray-500"}`}
             >
               制作物
               {activeTab === "creations" && (
@@ -614,7 +613,7 @@ fetchFollowStatus();
             </button>
             <button
               onClick={() => setActiveTab("questions")}
-              className={`flex-1 text-center py-4 text-[15px] font-bold hover:bg-gray-100 transition relative ${activeTab === "questions" ? "text-gray-900" : "text-gray-500"}`}
+              className={`flex-1 text-center py-4 text-[15px] md:text-base xl:text-lg font-bold hover:bg-gray-100 transition relative ${activeTab === "questions" ? "text-gray-900" : "text-gray-500"}`}
             >
               質問
               {activeTab === "questions" && (

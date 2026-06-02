@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -10,6 +10,7 @@ export default function Menu() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const { logout } = useAuth();
 
   useEffect(() => {
@@ -29,14 +30,14 @@ export default function Menu() {
       {/* アイコン */}
       <button 
         onClick={() => setOpen(!open)}
-        className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-gray-300 shadow-sm hover:bg-gray-300 transition focus:outline-none"
+        className="w-10 h-10 md:w-12 md:h-12 xl:w-14 xl:h-14 2xl:w-16 2xl:h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-gray-300 shadow-sm hover:bg-gray-300 transition focus:outline-none"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
         ) : userName ? (
-          <span className="text-gray-600 font-bold text-lg leading-none">{userName.charAt(0)}</span>
+          <span className="text-gray-600 font-bold text-lg md:text-xl xl:text-2xl 2xl:text-3xl leading-none">{userName.charAt(0)}</span>
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7 xl:h-8 xl:w-8 2xl:h-10 2xl:w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         )}
@@ -44,15 +45,17 @@ export default function Menu() {
 
       {/* メニュー */}
       {open && (
-        <div className="absolute top-12 right-0 bg-white border rounded shadow-lg flex flex-col w-40 overflow-hidden">
+        <div className="absolute top-16 right-0 bg-white border rounded shadow-lg flex flex-col w-40 overflow-hidden">
           {/* プロフィールへのリンク */}
-          <Link 
-            href="/profile" 
-            className="px-4 py-3 text-gray-700 hover:bg-gray-100 text-center border-b transition"
-            onClick={() => setOpen(false)}
-          >
-            プロフィール
-          </Link>
+          {pathname !== "/profile" && (
+            <Link 
+              href="/profile" 
+              className="px-4 py-3 text-gray-700 hover:bg-gray-100 text-center border-b transition"
+              onClick={() => setOpen(false)}
+            >
+              プロフィール
+            </Link>
+          )}
           
           {/* ログアウトボタン（一番下に配置） */}
           <button 

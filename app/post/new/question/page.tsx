@@ -289,8 +289,8 @@ export default function CreateQuestionPage() {
   const displayHeaderImage = headerImage || thumbnailImage;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-2xl bg-white shadow-md rounded-xl p-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-[95%] md:w-[80%] lg:w-[65%] xl:w-[50%] 2xl:w-[40%] max-w-[1000px] bg-white shadow-md rounded-xl p-8">
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           質問を投稿
         </h1>

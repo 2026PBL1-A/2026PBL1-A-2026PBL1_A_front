@@ -246,7 +246,7 @@ export default function CreatePostPage() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-2xl bg-white/80 backdrop-blur-md shadow-xl rounded-2xl p-10 border border-gray-200">
+        <div className="w-[95%] md:w-[80%] lg:w-[65%] xl:w-[50%] 2xl:w-[40%] max-w-[1000px] bg-white/80 backdrop-blur-md shadow-xl rounded-2xl p-10 border border-gray-200">
           <h1 className="text-2xl font-bold mb-6 text-gray-800">
             投稿作成
           </h1>

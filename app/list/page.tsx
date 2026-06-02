@@ -384,19 +384,19 @@ export default function Page() {
   return (
     <div className="flex min-h-screen bg-white">
       {/* サイドバー (PCでのみ表示) */}
-      <aside className="hidden md:flex flex-col w-52 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 overflow-y-auto pb-24">
-        <h3 className="text-sm font-bold text-gray-500 mb-4 px-2 uppercase tracking-wider">フォロー中</h3>
-        <div className="space-y-1">
+      <aside className="hidden md:flex flex-col md:w-56 xl:w-64 2xl:w-72 border-r border-gray-100 fixed h-full bg-white z-20 top-0 left-0 pt-20 px-4 xl:px-6 overflow-y-auto pb-24 transition-all">
+        <h3 className="text-sm xl:text-base font-bold text-gray-500 mb-4 px-2 uppercase tracking-wider">フォロー中</h3>
+        <div className="space-y-2 xl:space-y-3">
           {followingList.map((user) => (
-            <Link key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
-              <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors flex items-center justify-center">
+            <Link key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 xl:gap-4 px-2 xl:px-3 py-3 xl:py-4 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
+              <div className="w-12 h-12 xl:w-14 xl:h-14 2xl:w-16 2xl:h-16 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-blue-300 transition-colors flex items-center justify-center">
                 {user.iconUrl ? (
                   <img src={`${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}${user.iconUrl}`} alt={user.username} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-500 font-bold text-xs">{user.username?.charAt(0)}</span>
+                  <span className="text-gray-500 font-bold text-base xl:text-lg 2xl:text-xl">{user.username?.charAt(0)}</span>
                 )}
               </div>
-              <span className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate flex-1 transition-colors">
+              <span className="text-base xl:text-lg 2xl:text-xl font-bold text-gray-700 group-hover:text-blue-600 truncate flex-1 transition-colors">
                 {user.username}
               </span>
             </Link>
@@ -405,17 +405,17 @@ export default function Page() {
       </aside>
 
       {/* メインコンテンツ */}
-      <div className="flex-1 md:ml-52 w-full">
+      <div className="flex-1 md:ml-56 xl:ml-64 2xl:ml-72 w-full transition-all">
         {/* ヘッダー */}
-        <div className="fixed top-4 left-4 md:left-[272px] z-10 transition-all">
-          <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 rounded shadow-sm backdrop-blur-sm border border-gray-100">
+        <div className="fixed top-4 left-4 md:left-[288px] xl:left-[320px] 2xl:left-[352px] z-10 transition-all">
+          <span className="font-bold text-gray-700 bg-white/80 px-3 py-1 xl:px-4 xl:py-2 xl:text-lg rounded shadow-sm backdrop-blur-sm border border-gray-100">
             {currentUserName}
           </span>
         </div>
         <Menu />
 
         {/* 投稿一覧エリア */}
-        <div className="mt-16 px-4 pb-20 max-w-5xl mx-auto w-full">
+        <div className="mt-16 px-4 pb-20 w-[95%] xl:w-[90%] 2xl:w-[85%] max-w-[1800px] mx-auto">
 
           {/* キーワード検索エリア */}
           <div className="mb-6">

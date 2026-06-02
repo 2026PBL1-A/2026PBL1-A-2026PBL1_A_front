@@ -104,7 +104,7 @@ export default function FollowButton({ targetUserId }: Props) {
     <button
       onClick={handleToggle}
       disabled={loading}
-      className={`px-4 py-2 rounded-full text-sm font-bold transition ${
+      className={`px-6 py-2.5 xl:px-8 xl:py-3 2xl:px-10 2xl:py-4 rounded-full text-base xl:text-lg 2xl:text-xl font-bold transition-all shadow-sm hover:shadow-md ${
         isFollowing
           ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
           : "bg-blue-500 text-white hover:bg-blue-600"

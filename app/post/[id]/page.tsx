@@ -120,7 +120,7 @@ export default async function PostDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
-      <div className="px-4 max-w-3xl mx-auto">
+      <div className="px-4 w-[95%] md:w-[85%] lg:w-[75%] xl:w-[65%] 2xl:w-[55%] max-w-[1400px] mx-auto">
         <div className="mb-6">
           <Link href="/list" className="text-gray-900 bg-white/80 backdrop-blur hover:bg-gray-200 inline-flex items-center justify-center w-10 h-10 rounded-full transition shadow-sm border border-gray-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,7 +131,7 @@ export default async function PostDetailPage({
 
         <article className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-20">
           {/* ヒーロー画像（ヘッダー画像またはサムネイル画像、なければデフォルト画像） */}
-          <figure className="w-full aspect-video bg-gray-100 relative m-0">
+          <figure className="w-full h-48 md:h-64 xl:h-80 2xl:h-96 bg-gray-100 relative m-0 transition-all">
             <img
               src={headerUrl || thumbnailUrl || (post.itemType === 'creation' ? '/default-creation.jpg' : '/default-question.jpg')}
               alt={post.title}
@@ -144,14 +144,14 @@ export default async function PostDetailPage({
             </div>
           </figure>
 
-          <div className="p-8 md:p-12 pt-8">
-            <header className="mb-10">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
+          <div className="p-8 md:p-12 xl:p-16 pt-8 transition-all">
+            <header className="mb-10 xl:mb-14">
+              <h1 className="text-3xl md:text-4xl xl:text-5xl 2xl:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4 xl:mb-8 transition-all">
                 {post.title}
               </h1>
 
               {/* 投稿者情報 */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 xl:mb-10">
                 {(() => {
                   const postUserIdStr = post.userId?.id ?? post.userId ?? post.userid?.id ?? post.userid ?? post.user_id?.id ?? post.user_id;
                   let postUsername = post.user?.username ?? post.userId?.username ?? post.userid?.username ?? post.user_id?.username ?? post.username ?? "名無しユーザー";
@@ -170,7 +170,7 @@ export default async function PostDetailPage({
                         href={`/profile?userId=${postUserIdStr || ''}`}
                         className="flex items-center group"
                       >
-                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-3 font-bold text-sm border border-blue-100 overflow-hidden shadow-sm group-hover:shadow transition-shadow">
+                        <div className="w-14 h-14 md:w-16 md:h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4 xl:mr-6 font-bold text-lg md:text-xl xl:text-2xl 2xl:text-3xl border border-blue-100 overflow-hidden shadow-sm group-hover:shadow transition-all">
                           {postAvatar ? (
                             <img
                               src={postAvatar}
@@ -182,7 +182,7 @@ export default async function PostDetailPage({
                           )}
                         </div>
 
-                        <span className="font-bold text-gray-700 group-hover:text-blue-600 transition-colors">
+                        <span className="font-bold text-lg md:text-xl xl:text-2xl 2xl:text-3xl text-gray-700 group-hover:text-blue-600 transition-all">
                           {postUsername}
                         </span>
                       </Link>
@@ -196,11 +196,11 @@ export default async function PostDetailPage({
               </div>
 
               {/* メタデータ */}
-              <div className="flex items-center justify-between text-gray-500 text-sm">
+              <div className="flex items-center justify-between text-gray-500 text-sm md:text-base xl:text-lg transition-all">
                 <div className="flex items-center">
                   {(post.createdAt || post.created_at) && (
                     <div className="flex items-center mr-4">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <svg className="w-4 h-4 md:w-5 md:h-5 xl:w-6 xl:h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                       <time dateTime={post.createdAt || post.created_at}>
                         {formatDate(post.createdAt || post.created_at)}
                       </time>
@@ -224,7 +224,7 @@ export default async function PostDetailPage({
             )}
 
             {/* 本文 */}
-            <div className="prose prose-lg max-w-none text-gray-700 leading-loose mb-12 whitespace-pre-wrap">
+            <div className="prose prose-lg xl:prose-xl 2xl:prose-2xl max-w-none text-gray-700 leading-loose mb-12 whitespace-pre-wrap transition-all">
               {post.content}
             </div>
 
