@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "@/app/components/InappropriateWordWarningModal";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,35 +15,13 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState("登録中...");
 
-  const handleRegister = async () => {
-    // 入力チェック
-    if (!name || !mail || !password || !confirmPassword) {
-      setPopup({ message: "すべての項目を入力してください", type: "error" });
-      setTimeout(() => setPopup(null), 3000);
-      return;
-    }
+  // 不適切ワード警告モーダル用のステート
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [replacedName, setReplacedName] = useState("");
 
-    // メールアドレスの簡易チェック
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(mail)) {
-      setPopup({ message: "正しいメールアドレスを入力してください", type: "error" });
-      setTimeout(() => setPopup(null), 3000);
-      return;
-    }
-
-    // パスワードの最低文字数チェック(仮)
-    if (password.length < 8) {
-      setPopup({ message: "パスワードは8文字以上で入力してください", type: "error" });
-      setTimeout(() => setPopup(null), 3000);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setPopup({ message: "パスワードが一致しません", type: "error" });
-      setTimeout(() => setPopup(null), 3000);
-      return;
-    }
-
+  const executeRegister = async (submitName: string) => {
     setIsLoading(true);
     setLoadingLabel("登録中...");
     try {
@@ -52,7 +32,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
+          name: submitName,
           email: mail,
           password,
         }),
@@ -88,7 +68,7 @@ export default function RegisterPage() {
             ? loginData.username
             : typeof loginData?.user?.name === "string"
               ? loginData.user.name
-              : name;
+              : submitName;
 
       // 受け取ったユーザーIDを可能なキーから取得して保存
       const receivedUserId =
@@ -117,6 +97,67 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false);
       setLoadingLabel("登録中...");
+    }
+  };
+
+  const handleRegister = async () => {
+    // 入力チェック
+    if (!name || !mail || !password || !confirmPassword) {
+      setPopup({ message: "すべての項目を入力してください", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    // メールアドレスの簡易チェック
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(mail)) {
+      setPopup({ message: "正しいメールアドレスを入力してください", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    // パスワードの最低文字数チェック(仮)
+    if (password.length < 8) {
+      setPopup({ message: "パスワードは8文字以上で入力してください", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPopup({ message: "パスワードが一致しません", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const nameResult = await checkBannedWords(name);
+
+      if (nameResult.hasChanges) {
+        setReplacedName(nameResult.replaced);
+        const words = extractDetectedWords(name, nameResult.replaced);
+        setDetectedWords(words);
+        setIsWarningOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
+      await executeRegister(name);
+    } catch (error) {
+      console.error("チェックに失敗しました:", error);
+      setPopup({ message: "チェックに失敗しました", type: "error" });
+      setTimeout(() => setPopup(null), 3000);
+      setIsLoading(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      await executeRegister(replacedName);
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
     }
   };
 
@@ -191,6 +232,16 @@ export default function RegisterPage() {
           </button>
         </div>
       </div>
+
+      {/* 不適切ワード警告モーダル */}
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => setIsWarningOpen(false)}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+        isBlockOnly={true}
+      />
     </div>
   );
 }

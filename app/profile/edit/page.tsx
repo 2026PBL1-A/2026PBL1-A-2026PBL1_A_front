@@ -13,6 +13,8 @@ import {
   updateProfile,
   uploadProfileAvatar,
 } from "@/lib/profileApi";
+import { checkBannedWords, extractDetectedWords } from "@/lib/bannedWords";
+import InappropriateWordWarningModal from "@/app/components/InappropriateWordWarningModal";
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -27,6 +29,16 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState<string | null>("");
   const [isSaving, setIsSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  
+  // 不適切ワード警告モーダル用のステート
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [isWarningSubmitting, setIsWarningSubmitting] = useState(false);
+  const [detectedWords, setDetectedWords] = useState<string[]>([]);
+  const [isBlockOnly, setIsBlockOnly] = useState(false);
+  
+  // 伏字置換済みのテキストを保持
+  const [replacedUserName, setReplacedUserName] = useState("");
+  const [replacedBio, setReplacedBio] = useState("");
   
   // 技術スタック選択用のステート
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -182,8 +194,7 @@ export default function ProfileEditPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSave = async (submitUserName: string, submitBio: string) => {
     setIsSaving(true);
 
     try {
@@ -215,11 +226,11 @@ export default function ProfileEditPage() {
         );
 
         // username は空文字を送らず、入力があるときだけ更新する
-        if (userName.trim()) {
-          payload.username = userName.trim();
+        if (submitUserName.trim()) {
+          payload.username = submitUserName.trim();
         }
         // 自己紹介は空でも送って、画面表示と保存内容を揃える
-        payload.bio = bio ?? "";
+        payload.bio = submitBio;
         payload.tag_ids = resolvedTagIds;
 
         // API でプロフィールを更新して返ってきた内容をローカルに保存する
@@ -261,11 +272,11 @@ export default function ProfileEditPage() {
       }
 
       // localStorage も更新して既存画面の表示を即時反映
-      localStorage.setItem("user_name", userName);
+      localStorage.setItem("user_name", submitUserName);
       if (finalAvatarUrl) {
         localStorage.setItem("avatar_url", finalAvatarUrl);
       }
-      localStorage.setItem("user_bio", bio ?? "");
+      localStorage.setItem("user_bio", submitBio);
 
       router.push("/profile");
     } catch (error) {
@@ -278,6 +289,56 @@ export default function ProfileEditPage() {
       "user_skills",
       JSON.stringify(selectedSkills)
     );
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userName.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const [nameResult, bioResult] = await Promise.all([
+        checkBannedWords(userName),
+        checkBannedWords(bio ?? ""),
+      ]);
+
+      if (nameResult.hasChanges || bioResult.hasChanges) {
+        setReplacedUserName(nameResult.replaced);
+        setReplacedBio(bioResult.replaced);
+
+        const nameWords = nameResult.hasChanges
+          ? extractDetectedWords(userName, nameResult.replaced)
+          : [];
+        const bioWords = bioResult.hasChanges
+          ? extractDetectedWords(bio ?? "", bioResult.replaced)
+          : [];
+        
+        // 名前が引っかかった場合は修正必須とする
+        setIsBlockOnly(nameResult.hasChanges);
+        
+        setDetectedWords([...new Set([...nameWords, ...bioWords])]);
+
+        setIsWarningOpen(true);
+        setIsSaving(false);
+        return;
+      }
+
+      await executeSave(userName, bio ?? "");
+    } catch (error) {
+      console.error("チェックに失敗しました:", error);
+      alert("チェックに失敗しました");
+      setIsSaving(false);
+    }
+  };
+
+  const handleProceedWithCensored = async () => {
+    setIsWarningSubmitting(true);
+    try {
+      await executeSave(replacedUserName, replacedBio);
+    } finally {
+      setIsWarningSubmitting(false);
+      setIsWarningOpen(false);
+    }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -633,6 +694,16 @@ export default function ProfileEditPage() {
           </div>
         </div>
       )}
+
+      {/* 不適切ワード警告モーダル */}
+      <InappropriateWordWarningModal
+        isOpen={isWarningOpen}
+        detectedWords={detectedWords}
+        onClose={() => setIsWarningOpen(false)}
+        onProceed={handleProceedWithCensored}
+        isSubmitting={isWarningSubmitting}
+        isBlockOnly={isBlockOnly}
+      />
     </div>
   );
 }
