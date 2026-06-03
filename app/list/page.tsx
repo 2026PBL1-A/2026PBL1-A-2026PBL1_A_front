@@ -381,6 +381,14 @@ export default function Page() {
     currentPage * itemsPerPage
   );
 
+  // 現在表示されている投稿に含まれるタグ名のみを抽出
+  const availableTagNames = new Set<string>();
+  filteredPosts.forEach((post) => {
+    if (Array.isArray(post.tags)) {
+      post.tags.forEach((t) => availableTagNames.add(t));
+    }
+  });
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* サイドバー (PCでのみ表示) */}
@@ -647,7 +655,8 @@ export default function Page() {
             <div className="flex gap-2 flex-wrap max-h-64 overflow-y-auto">
               {allTags
                 .filter((tag) =>
-                  tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
+                  tag.tag.toLowerCase().includes(tagSearch.toLowerCase()) &&
+                  availableTagNames.has(tag.tag)
                 )
                 .map((tag) => (
                   <button
