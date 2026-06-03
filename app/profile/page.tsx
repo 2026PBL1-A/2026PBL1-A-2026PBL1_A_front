@@ -6,7 +6,7 @@ import Menu from "@/app/components/aikon";
 import { dummyPosts, Post } from "@/app/data/dummyPosts"; // ダミー投稿を読み込む
 import Image from "next/image";
 import { formatDate } from "@/lib/formatDate";
-import { isUsingBackend } from "@/lib/api";
+import { isUsingBackend, apiCall, fetchWithAuth } from "@/lib/api";
 import {
   createProfile,
   getAllProfiles,
@@ -138,66 +138,45 @@ function ProfileContent() {
   const [skills, setSkills] = useState<string[]>([]);
 
   const handleFollowToggle = async () => {
-  if (followLoading) return;
+    if (followLoading) return;
 
-  setFollowLoading(true);
+    setFollowLoading(true);
 
-  try {
-    const targetUserId = userIdParam;
+    try {
+      const targetUserId = userIdParam;
 
-    if (!targetUserId) return;
+      if (!targetUserId) return;
 
-    // backend 使用時
-    if (isUsingBackend()) {
-      const token = localStorage.getItem("access_token");
-
-      const method = isFollowing ? "DELETE" : "POST";
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/${targetUserId}`,
-        {
-          method,
-          headers: {
-            ...(token
-              ? { Authorization: `Bearer ${token}` }
-              : {}),
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("フォロー更新に失敗しました");
+      // backend 使用時
+      if (isUsingBackend()) {
+        await apiCall(`/follows/${targetUserId}`, {
+          method: "PATCH",
+        });
       }
-    }
 
-    // UI更新
-    const newFollowState = !isFollowing;
+      // UI更新
+      const newFollowState = !isFollowing;
 
-    setIsFollowing(newFollowState);
+      setIsFollowing(newFollowState);
 
-    setFollowersCount((prev) =>
-      newFollowState ? prev + 1 : prev - 1
-    );
-
-    // localStorage保存
-    if (newFollowState) {
-      localStorage.setItem(
-        `follow_${targetUserId}`,
-        "true"
+      setFollowersCount((prev) =>
+        newFollowState ? prev + 1 : prev - 1
       );
-    } else {
-      localStorage.removeItem(
-        `follow_${targetUserId}`
-      );
-    }
 
-  } catch (err) {
-    console.error(err);
-    alert("フォロー処理に失敗しました");
-  } finally {
-    setFollowLoading(false);
-  }
-};
+      // localStorage保存
+      if (newFollowState) {
+        localStorage.setItem(`follow_${targetUserId}`, "true");
+      } else {
+        localStorage.removeItem(`follow_${targetUserId}`);
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("フォロー処理に失敗しました");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   useEffect(() => {
     const storedSkills = localStorage.getItem("user_skills");
@@ -425,33 +404,30 @@ function ProfileContent() {
 
     // フォロー状態取得
     const fetchFollowStatus = async () => {
-  const targetUserId = userIdParam || storedUserId;
-  if (!currentIsMyProfile && targetUserId) {
-    try {
-      const token = localStorage.getItem("access_token");
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000"}/follow/status/${targetUserId}`,
-        {
-          headers: {
-            ...(token
-              ? { Authorization: `Bearer ${token}` }
-              : {}),
-          },
+      const targetUserId = userIdParam || storedUserId;
+      if (!currentIsMyProfile && targetUserId) {
+        try {
+          if (isUsingBackend()) {
+            const res = await fetchWithAuth(`/follows/followers/${targetUserId}`);
+            if (res.ok) {
+              const followers: { id: string }[] = await res.json();
+              const myUserId = localStorage.getItem("user_id") || storedUserId;
+              const isFollow = followers.some((f) => String(f.id) === String(myUserId));
+              setIsFollowing(isFollow);
+              setFollowersCount(followers.length);
+              
+              if (isFollow) {
+                localStorage.setItem(`follow_${targetUserId}`, "true");
+              } else {
+                localStorage.removeItem(`follow_${targetUserId}`);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("フォロー状態取得失敗", err);
         }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-
-        setIsFollowing(data.isFollowing);
-        setFollowersCount(data.followersCount ?? 0);
       }
-    } catch (err) {
-      console.error("フォロー状態取得失敗", err);
-    }
-  }
-};
+    };
 
 fetchFollowStatus();
   }, []);

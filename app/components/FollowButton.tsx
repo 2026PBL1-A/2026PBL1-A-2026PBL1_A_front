@@ -59,15 +59,29 @@ export default function FollowButton({ targetUserId }: Props) {
     let isMounted = true;
 
     const checkFollowStatus = async () => {
+      // まずは localStorage のキャッシュから初期状態を設定（画面遷移時の状態共有のため）
+      const cachedFollow = localStorage.getItem(`follow_${targetUserId}`);
+      if (cachedFollow === "true") {
+        setIsFollowing(true);
+      }
+
       try {
         // 対象ユーザーのフォロワー一覧を取得し、自分が含まれているかチェック
         const res = await fetchWithAuth(`/follows/followers/${targetUserId}`);
         if (res.ok && isMounted) {
           const followers: { id: string }[] = await res.json();
-          setIsFollowing(followers.some((f) => String(f.id) === myUserId));
+          const isFollow = followers.some((f) => String(f.id) === myUserId);
+          setIsFollowing(isFollow);
+          
+          // バックエンドの最新状態を localStorage に同期
+          if (isFollow) {
+            localStorage.setItem(`follow_${targetUserId}`, "true");
+          } else {
+            localStorage.removeItem(`follow_${targetUserId}`);
+          }
         }
       } catch {
-        // 取得失敗時は初期値（false）のまま
+        // 取得失敗時は初期値（falseまたはキャッシュの値）のまま
       }
     };
 
@@ -88,7 +102,15 @@ export default function FollowButton({ targetUserId }: Props) {
       });
 
       // API 成功後に UI を更新
-      setIsFollowing((prev) => !prev);
+      const newFollowState = !isFollowing;
+      setIsFollowing(newFollowState);
+
+      // 他の画面（プロフィール画面など）と状態を同期するために localStorage にも保存
+      if (newFollowState) {
+        localStorage.setItem(`follow_${targetUserId}`, "true");
+      } else {
+        localStorage.removeItem(`follow_${targetUserId}`);
+      }
     } catch (error) {
       console.error("フォロー処理に失敗しました:", error);
     } finally {
