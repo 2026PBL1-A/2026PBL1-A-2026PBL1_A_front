@@ -3,7 +3,7 @@
 ## ✅ 実装済みの機能
 
 ### ログイン機能
-- [x] API 呼び出し（POST /auth/login）
+- [x] API 呼び出し（POST /api/auth/login）
 - [x] access_token の localStorage 保存
 - [x] エラーハンドリング
 - [x] ローディング状態の管理
@@ -13,6 +13,11 @@
 - [x] AuthContext による global state
 - [x] useAuth Hook
 - [x] withAuth HOC（ページ保護用）
+
+### 入力検証・不適切ワード対策
+- [x] 登録名の不適切ワードチェック
+- [x] 投稿タイトル/本文の不適切ワードチェック
+- [x] タグ入力時の不適切ワードチェック
 
 ### API ユーティリティ
 - [x] 自動 Bearer token 付加
@@ -60,6 +65,8 @@ npm run dev
 # http://localhost:3000/login にアクセス
 # バックエンドが起動していることを確認してからログイン
 ```
+
+`.env.local` で `NEXT_PUBLIC_USE_BACKEND=true` を指定していることも確認してください。
 
 ### 2. API ユーティリティをテストする
 
@@ -120,7 +127,7 @@ console.log(token);
 ### 例1: ログアウトボタン付きページ
 
 ```typescript
-// app/itiran/page.tsx
+// app/list/page.tsx
 "use client";
 
 import { useAuth } from "@/lib/AuthContext";
@@ -167,6 +174,9 @@ A: ログイン画面でエラーメッセージが表示されます。
 
 **Q: token を手動で削除したら？**
 A: 保護ページにアクセスしたときにログインページへ遷移します。
+
+**Q: ローカルモードで動かすには？**
+A: `.env.local` で `NEXT_PUBLIC_USE_BACKEND=false` を設定してください。機能によってはダミーデータ表示に切り替わります。
 
 ---
 

@@ -1,8 +1,24 @@
-# ログイン機能の実装ガイド
+# 認証機能の実装ガイド
 
 ## 概要
 
-このドキュメントでは、JWT ベースの認証をフロントエンドに実装する手順を説明します。
+このドキュメントでは、JWT ベースの認証をフロントエンドに実装する手順と、現行実装のポイントを説明します。
+
+---
+
+## 0. 環境変数
+
+`.env.local` に以下を設定してください。
+
+```env
+BACKEND_API_URL=http://localhost:5000
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:5000
+NEXT_PUBLIC_USE_BACKEND=true
+```
+
+- `BACKEND_API_URL`: rewrite とサーバー側 fetch で利用
+- `NEXT_PUBLIC_BACKEND_API_URL`: クライアント側の画像 URL 構築などで利用
+- `NEXT_PUBLIC_USE_BACKEND`: `false` のときローカルモード
 
 ---
 
@@ -16,7 +32,7 @@
 - **[lib/AuthContext.tsx](lib/AuthContext.tsx)**: 認証状態管理（Context API）
 - **[lib/withAuth.tsx](lib/withAuth.tsx)**: 保護ページ用 HOC
 - **[lib/ProtectedPostListPage.tsx](lib/ProtectedPostListPage.tsx)**: API 呼び出し例
-- **[.env.local](.env.local)**: 環境変数設定
+- **[.env.local](.env.local)**: 環境変数設定（ローカル作成）
 
 ### 修正したファイル
 - **[app/layout.tsx](app/layout.tsx)**: `AuthProvider` をラップ
@@ -28,13 +44,13 @@
 ```
 ユーザー入力
     ↓
-POST /auth/login（email, password）
+POST /api/auth/login（email, password）
     ↓
 レスポンス: { access_token: "eyJhbGc..." }
     ↓
 localStorage に保存
     ↓
-/itiran へ遷移
+/list へ遷移
 ```
 
 ---
@@ -190,7 +206,7 @@ token を ブラックリストに追加するか、JWT の有効期限で対応
 ### 実装例: Refresh Token（オプション）
 
 ```typescript
-// lib/api.ts に追加
+// lib/api.ts に追加する場合の例
 async function refreshToken(): Promise<string> {
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
@@ -225,15 +241,24 @@ async function refreshToken(): Promise<string> {
 
 ### CORS エラーが出る場合
 
-バックエンド（NestJS）側で CORS を設定：
+フロントは `/api/*` を呼び、`next.config.ts` の rewrite でバックエンドへ転送する構成です。まず以下を確認してください。
+
+1. `.env.local` の `BACKEND_API_URL` が正しいか
+2. バックエンドが起動しているか
+3. 必要に応じてバックエンド（NestJS）側で CORS を設定
 
 ```typescript
 // main.ts
 app.enableCors({
-  origin: 'http://localhost:3000',
+  origin: "http://localhost:3000",
   credentials: true,
 });
 ```
+
+### ローカルモードを使いたい場合
+
+`.env.local` の `NEXT_PUBLIC_USE_BACKEND=false` で切り替えできます。
+ただし、機能によってはダミーデータ表示や API 呼び出しスキップに変わります。
 
 ### localStorage が動作しない場合
 
@@ -244,11 +269,11 @@ app.enableCors({
 
 ## 9. 次のステップ
 
-1. ✅ ログイン機能の実装
-2. ⏳ Refresh Token の実装
-3. ⏳ ログアウト API の実装（バックエンド側）
-4. ⏳ ユーザー情報取得 API の実装
-5. ⏳ パスワード変更機能の実装
+1. ✅ ログイン/新規登録機能の実装
+2. ✅ 401 時の自動ログアウト
+3. ⏳ Refresh Token の実装
+4. ⏳ ログアウト API の実装（バックエンド側）
+5. ⏳ HttpOnly Cookie 運用の検討
 
 ---
 
